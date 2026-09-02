@@ -1,9 +1,12 @@
 # C2C Agent Bridge (dev)
 
 Local HTTP + SSE bridge that plays ShiftAI Execution Studio's role on a laptop so the
-Marketing Studio UI (**Live agents** screen) can drive the real Campaign
-Identification agent and watch its STS v2 telemetry stream live. Dev tool only —
-production invocation/task routing belongs to Execution Studio.
+Marketing Studio UI can drive the real agents and watch their STS v2 telemetry
+stream live: **Live agents** (Agent 1, Campaign Identification) and **Campaign box
+(live)** (Agent 2, Campaign-in-a-Box Orchestrator). One session = one store, one
+telemetry bus, one kill switch — an approved brief flows straight from Agent 1 into
+Agent 2's planning pass on the same trace. Dev tool only — production
+invocation/task routing belongs to Execution Studio.
 
 ## Run
 
@@ -40,8 +43,24 @@ npm run dev        # → http://localhost:5173/live  (sidebar: "Live agents")
 | `GET /api/telemetry?after=SEQ` | recent STS records (polling fallback) |
 | `GET /api/stream` | SSE live feed of every STS record (`bridge.seq` ordering) |
 | `GET /api/documents/{name}` | download a generated brief .docx |
-| `POST /api/control/kill-switch` `{paused, reason}` | pause/resume the agent (governance demo) |
+| `POST /api/control/kill-switch` `{paused, reason}` | pause/resume EVERY agent in the session (governance demo) |
 | `POST /api/control/reset` | fresh dev session (new workdir; prior session data stays on disk, nothing deleted) |
+
+### Agent 2 — Campaign-in-a-Box (`/api/box/…`)
+
+| Method/Path | Purpose |
+|---|---|
+| `POST /api/box/campaigns/{cmp}/plan` `{actor_id}` | planning pass from the approved brief (reuses Agent 1's trace) |
+| `POST /api/box/campaigns/{cmp}/confirm` `{kind: pack\|plan, decision: confirmed\|modified, actor_id, deltas?}` | Marketing Lead gate; deltas → new version |
+| `POST /api/box/campaigns/{cmp}/assets/{asset}/confirm` `{actor_id, text?, claim_refs?}` | **DEV stand-in for Agents 3–4**: registers a content-confirmed asset with its human confirmation record |
+| `POST /api/box/campaigns/{cmp}/package` | deterministic packaging run (blocks on any completeness gap) |
+| `POST /api/box/campaigns/{cmp}/reopen` `{asset_ids, requesting_gate, actor_id}` | gate return: re-open only the named assets |
+| `GET /api/box/campaigns` · `GET /api/box/campaigns/{cmp}` | plan list / full detail (pack, checklist, outlines, plan, manifest, report) |
+| `GET /api/box/documents?path=REL` | download pack .docx / tracker .csv / final snapshots (workspace-scoped) |
+
+Dev seed data: each session gets a small synthetic content repository +
+intel-library (`c2c_bridge/seed.py`) so reuse search and intel gathering have real
+material. No SemRush key → intel-library-only fallback, flagged per spec.
 
 The human gates stay human: the bridge only carries the requester's answers and the
 approver's explicit identity-stamped decision into the agent — there is no endpoint

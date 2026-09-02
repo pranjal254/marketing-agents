@@ -1,0 +1,149 @@
+{
+  "rulesPackId": "levelshift-brand-rules",
+  "version": "0.1.0-draft",
+  "status": "draft — pending Marketing Lead sign-off",
+  "sources": [
+    "reference/brand-guidelines/Final Brand Guidelines Document.docx (LevelShift Brand Playbook, internal, 2026)",
+    "reference/brand-guidelines/Brand-Guidelines.pdf (visual identity brand book, 2025)",
+    "LevelShift C2C Phase 1 Technical Specs V2.1 (tone/terminology rules mandated per agent)"
+  ],
+  "positioning": "For enterprise organizations navigating complex AI transformations, LevelShift is the single accountable partner that combines deep industry expertise, 500+ certified technical experts, and disciplined execution frameworks to help enterprises choose the right AI path — and succeed.",
+  "archetype": "The Sage blended with the Ruler: trusted expert plus order, governance, and accountable outcomes.",
+  "tone": "Positive, confident, respectful of senior readers. No urgency or fear framing. No overselling.",
+  "voice": [
+    {
+      "id": "authoritative_not_arrogant",
+      "label": "Authoritative (Not Arrogant)",
+      "do": "Be direct. State your position. Back it with reasoning, data, or experience.",
+      "dont": "Lecture. Do not use 'clearly' or 'obviously', which can make the reader feel behind."
+    },
+    {
+      "id": "clear_not_simplified",
+      "label": "Clear (Not Simplified)",
+      "do": "Use plain language for technical concepts. Define jargon the first time. Write shorter sentences.",
+      "dont": "Use buzzwords as shortcuts or oversimplify to the point of being misleading."
+    },
+    {
+      "id": "outcome_driven_not_feature_focused",
+      "label": "Outcome-Driven (Not Feature-Focused)",
+      "do": "Lead with the business problem. Tie every capability to a measurable outcome.",
+      "dont": "List features without context or write about AI in the abstract."
+    },
+    {
+      "id": "industry_grounded_not_generic",
+      "label": "Industry-Grounded (Not Generic)",
+      "do": "Reference real industry challenges. Use sector-specific language where relevant.",
+      "dont": "Write content that could apply to any company or use vague phrases like 'businesses everywhere'."
+    }
+  ],
+  "wordChoice": {
+    "overuseFlagged": ["seamlessly", "delve", "leverage"],
+    "avoidTerms": ["clearly", "obviously", "businesses everywhere"],
+    "bannedTerms": [],
+    "bannedTermsNote": "The playbook's banned-phrases section is a placeholder; this list stays empty until Marketing provides the real list. Overuse/avoid terms above are the only words the playbook names.",
+    "urgencyFearFlagged": [
+      "act now",
+      "don't miss",
+      "limited time",
+      "before it's too late",
+      "falling behind",
+      "risk being left behind",
+      "urgent"
+    ],
+    "urgencyFearNote": "Spec rule: no urgency/fear framing. Term list is a draft heuristic pending Marketing sign-off; the LLM prompt carries the rule in full."
+  },
+  "terminology": [
+    { "id": "shiftai_one_word", "rule": "Write 'ShiftAI' as one word." },
+    { "id": "bc_fo_independent", "rule": "Business Central and F&O are strictly independent; never combine them in one campaign concept or claim." },
+    { "id": "copilot_d365_cloud_only", "rule": "Copilot is D365-cloud-only; never position Copilot for on-premise scenarios." }
+  ],
+  "contentSelfCheck": [
+    "Does the piece lead with a business problem or insight — not a product description?",
+    "Is every AI capability claim connected to a business outcome?",
+    "Would a senior enterprise leader feel respected reading this?",
+    "Have I removed all banned words and empty adjectives?",
+    "Is there at least one specific, concrete detail?",
+    "Does the piece represent a clear LevelShift point of view?",
+    "Is the call to action specific and single?",
+    "Could I read this aloud without it sounding like a brochure?"
+  ],
+  "playbooks": {
+    "blog": {
+      "purpose": "Demonstrate that LevelShift understands the real problems enterprises face with AI adoption.",
+      "structure": "Intro/Hook (1–2 sentences) → The Problem → The Insight/Solution/Deep Dive (FAQs, infographic) → Practical Takeaway → CTA",
+      "voice": "First person plural (We). Confident and direct.",
+      "wordCount": "700–1,200"
+    },
+    "whitepaper": {
+      "purpose": "Serve readers who need to understand a challenge deeply before making an internal recommendation.",
+      "structure": "Executive Summary → Context → Analysis: LevelShift framework → Practical Guidance → Appendix",
+      "voice": "Third-person or authoritative first person. Data and evidence required.",
+      "wordCount": "2,500–5,000"
+    },
+    "service_page": {
+      "purpose": "Answer: can these people help me? Move the reader from interest to action.",
+      "structure": "Opening: the business problem → What We Do → How We Work → Proof → CTA",
+      "voice": "Second person (You). Every feature must be followed by a benefit.",
+      "wordCount": null
+    },
+    "case_study": {
+      "purpose": "Let results do the talking — the most powerful conversion asset at the Decision stage.",
+      "structure": "Result at a glance → Client Context → The Problem → The LevelShift Approach → The Outcome (quantified) → Client Perspective",
+      "voice": "Evidence-led. Past tense, active voice. Numbers over adjectives.",
+      "wordCount": null
+    },
+    "email": {
+      "purpose": "Move prospects through the buyer journey with relevance and timing.",
+      "structure": "Subject line → Opening: one-sentence pain-point context → The Value → CTA: one clear action → Signature",
+      "voice": "Personal and direct, one person to one person. Short paragraphs.",
+      "wordCount": null
+    }
+  },
+  "personas": [
+    {
+      "id": "transformation_mandate_owner",
+      "title": "The Transformation Mandate Owner (CDO / CTO / CIO, $1B+ revenue)",
+      "pains": "Fragmented AI initiatives with no enterprise coherence. Board pressure for measurable ROI.",
+      "keyMessage": "LevelShift is your single accountable AI transformation partner. We own the outcome from strategy to deployment."
+    },
+    {
+      "id": "platform_architect",
+      "title": "The Platform Architect (VP of IT / Enterprise Architect, mid-to-large enterprise)",
+      "pains": "Legacy systems creating integration debt. Teams stretched across Salesforce, Microsoft, and data platforms simultaneously.",
+      "keyMessage": "Technology-certified experts. Proven frameworks. Enterprise-grade implementation — with speed."
+    },
+    {
+      "id": "roi_champion",
+      "title": "The ROI Champion (CFO / COO / VP Finance, cost and efficiency focus)",
+      "pains": "High total cost of ownership on current platforms. Manual processes inflating overhead. Unclear ROI.",
+      "keyMessage": "LevelShift reduces total cost of ownership by up to 50% through AI-driven automation and right-sized managed services."
+    },
+    {
+      "id": "revenue_accelerator",
+      "title": "The Revenue Accelerator (CRO / VP Sales / VP Operations, revenue cycle focus)",
+      "pains": "Revenue leakage from slow quote-to-cash. Disconnected CRM and ERP preventing real-time deal visibility.",
+      "keyMessage": "LevelShift accelerates your revenue cycle with faster quotes, smarter insights, measurable impact."
+    }
+  ],
+  "buyerJourney": [
+    { "stage": "Awareness", "trigger": "Board mandate for AI. Competitive pressure. Failed internal initiative.", "content": "Thought leadership blogs, AI trend reports, event keynotes, LinkedIn posts" },
+    { "stage": "Consideration", "trigger": "Evaluating partners. Building internal business case. RFP stage.", "content": "Whitepapers, solution briefs, capability decks, webinars, practice pages, gated content" },
+    { "stage": "Decision", "trigger": "Final vendor shortlist. Reference checks. Contract negotiation.", "content": "Case studies, ROI calculators, executive briefings, demos, proposal decks" },
+    { "stage": "Expansion", "trigger": "Successful deployment. New business unit. Adjacent practice need.", "content": "Success story assets, managed services proposals, upsell decks" }
+  ],
+  "credentials": [
+    "Salesforce Summit Partner — highest tier, 4.9 AppExchange rating, recognized by Forrester",
+    "Microsoft Solutions Partner — Azure, Data & AI, BizApps; Dynamics specializations; Microsoft Fabric Featured Partner",
+    "Great Place to Work — five consecutive years (2021–2026)",
+    "300+ clients served worldwide"
+  ],
+  "visual": {
+    "colors": [
+      { "name": "Pure White", "hex": "#FFFFFF" },
+      { "name": "Rich Electric Blue", "hex": "#009ADA" },
+      { "name": "Deep Phthalo Blue", "hex": "#080A52" },
+      { "name": "Black", "hex": "#000000" }
+    ],
+    "typography": { "headline": "Oxanium Bold", "subhead": "Lexend Medium", "body": "Lexend Regular" }
+  }
+}

@@ -12,6 +12,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# marketing-owned source documents (SharePoint is the source of truth; not committed)
+reference/
+
 # dev run artifacts
 .dev-run/
 telemetry-out.jsonl

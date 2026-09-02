@@ -56,6 +56,11 @@ class SharedSettings(BaseSettings):
     graph_client_id: str | None = Field(default=None, alias="GRAPH_CLIENT_ID")
     graph_client_secret: SecretStr | None = Field(default=None, alias="GRAPH_CLIENT_SECRET")
 
+    # SemRush (Agent 2 competitive/market intel). No key → intel-library-only
+    # fallback mode, flagged (spec fallback) — never a hard failure.
+    semrush_api_key: SecretStr | None = Field(default=None, alias="SEMRUSH_API_KEY")
+    semrush_database: str = Field(default="us", alias="SEMRUSH_DATABASE")
+
 
 def load_settings() -> SharedSettings:
     return SharedSettings()

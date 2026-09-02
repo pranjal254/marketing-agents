@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 
+from c2c_campaign_box import MODEL_ID as BOX_MODEL_ID
 from campaign_identification import MODEL_ID
 from campaign_identification.approval import ApprovalGateError
 from campaign_identification.orchestration import AgentDeps, CampaignIdentificationAgent
@@ -38,35 +39,84 @@ from shiftai_shared.resilience import SqliteIdempotencyStore
 from shiftai_shared.telemetry import JsonlSink
 
 from c2c_bridge.bus import TeeSink, TelemetryBus
+from c2c_bridge.seed import seed_dev_workspace
 
 AGENTS_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = AGENTS_ROOT / "campaign-identification" / "config" / "campaign_identification.json"
+BOX_CONFIG_PATH = AGENTS_ROOT / "campaign-in-a-box" / "config" / "campaign_in_a_box.json"
 DEFAULT_WORKDIR = AGENTS_ROOT / "bridge" / ".bridge-run"
 DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 
 class Bridge:
-    """Holds the agent + its stores for the process lifetime."""
+    """Holds both agents + their stores for the process lifetime. One session =
+    one store, one telemetry bus, one kill switch (scope-keyed per agent) — so an
+    approved brief from Agent 1 flows straight into Agent 2's planning pass and
+    both agents' STS records ride one stream."""
 
     def __init__(self, workdir: Path, settings: SharedSettings) -> None:
+        from c2c_campaign_box.agent_config import load_orchestrator_config
+        from c2c_campaign_box.orchestration import (
+            CampaignBoxOrchestrator,
+            OrchestratorDeps,
+        )
+        from c2c_campaign_box.repository import LocalRepositoryIndex
+        from c2c_campaign_box.workspace import LocalCampaignWorkspace
+        from shiftai_shared.brand import load_brand_rules
+        from shiftai_shared.semrush import SemrushClient
+
         workdir.mkdir(parents=True, exist_ok=True)
         self.workdir = workdir
         self.settings = settings
         self.bus = TelemetryBus()
         self.store = SqliteContextStore(str(workdir / "context-store.sqlite"))
         self.workspace_dir = workdir / "workspace"
+        self.kill_switch = KillSwitch()
+        sink = TeeSink(JsonlSink(str(workdir / "telemetry.jsonl")), self.bus)
+        idempotency = SqliteIdempotencyStore(str(workdir / "idempotency.sqlite"))
         config = load_decision_config(CONFIG_PATH)
         self.agent = CampaignIdentificationAgent(
             AgentDeps(
                 provider=build_provider(settings),
                 store=self.store,
                 workspace=LocalWorkspace(str(self.workspace_dir)),
-                sink=TeeSink(JsonlSink(str(workdir / "telemetry.jsonl")), self.bus),
-                kill_switch=KillSwitch(),
+                sink=sink,
+                kill_switch=self.kill_switch,
                 rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
-                idempotency=SqliteIdempotencyStore(str(workdir / "idempotency.sqlite")),
+                idempotency=idempotency,
                 config=config,
                 settings=settings,
+            )
+        )
+        # Agent 2 — dev bindings: local campaign workspace + seeded sample
+        # repository / intel library; SemRush only when a key is configured
+        # (otherwise intel-library-only fallback, flagged per spec).
+        self.box_workspace_dir = workdir / "box-workspace"
+        repository_dir = workdir / "repository"
+        seed_dev_workspace(self.box_workspace_dir, repository_dir)
+        box_config = load_orchestrator_config(BOX_CONFIG_PATH)
+        intel_source = None
+        if settings.semrush_api_key is not None:
+            intel_source = SemrushClient(
+                settings.semrush_api_key.get_secret_value(),
+                database=settings.semrush_database,
+            )
+        self.box = CampaignBoxOrchestrator(
+            OrchestratorDeps(
+                provider=build_provider(settings),
+                store=self.store,
+                workspace=LocalCampaignWorkspace(str(self.box_workspace_dir)),
+                repository=LocalRepositoryIndex(
+                    str(repository_dir), box_config.fitness_weights
+                ),
+                intel_source=intel_source,
+                sink=sink,
+                kill_switch=self.kill_switch,
+                rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
+                idempotency=idempotency,
+                config=box_config,
+                settings=settings,
+                brand_rules=load_brand_rules(),
             )
         )
         # One case at a time keeps SQLite happy and mirrors event-driven invocation.
@@ -195,6 +245,22 @@ def create_app(workdir: Path | None = None, settings: SharedSettings | None = No
             "reason_codes": config.reason_codes,
             "provider": bridge().settings.llm_provider,
             "model": MODEL_ID,
+            "box": {
+                "agent_id": bridge().box.deps.config.agent_id,
+                "agent_name": "Campaign-in-a-Box Orchestrator",
+                "config_version": bridge().box.deps.config.version,
+                "model": BOX_MODEL_ID,
+                "composition": [
+                    c.model_dump() for c in bridge().box.deps.config.composition
+                ],
+                "composition_status": bridge().box.deps.config.composition_status,
+                "reason_codes": bridge().box.deps.config.reason_codes,
+                "intel_mode": (
+                    "semrush_plus_library"
+                    if bridge().box.deps.intel_source is not None
+                    else "intel_library_only"
+                ),
+            },
         }
 
     # ------------------------------------------------------------------ actions
@@ -264,11 +330,16 @@ def create_app(workdir: Path | None = None, settings: SharedSettings | None = No
 
     @app.post("/api/control/kill-switch")
     def set_kill_switch(body: KillSwitchIn) -> dict[str, str]:
-        agent_id = bridge().agent.deps.config.agent_id
-        if body.paused:
-            bridge().agent.deps.kill_switch.pause(agent_id, body.reason)
-        else:
-            bridge().agent.deps.kill_switch.resume(agent_id)
+        # One governance switch pauses every agent in the session (scope-keyed).
+        agent_ids = (
+            bridge().agent.deps.config.agent_id,
+            bridge().box.deps.config.agent_id,
+        )
+        for agent_id in agent_ids:
+            if body.paused:
+                bridge().kill_switch.pause(agent_id, body.reason)
+            else:
+                bridge().kill_switch.resume(agent_id)
         return {"kill_switch": "paused" if body.paused else "clear"}
 
     @app.post("/api/control/reset")
@@ -338,6 +409,11 @@ def create_app(workdir: Path | None = None, settings: SharedSettings | None = No
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
+
+    # ---------------------------------------------- Agent 2: Campaign-in-a-Box
+    from c2c_bridge.box_routes import register_box_routes
+
+    register_box_routes(app, bridge)
 
     return app
 

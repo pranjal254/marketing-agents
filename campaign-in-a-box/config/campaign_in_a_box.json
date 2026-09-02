@@ -1,0 +1,60 @@
+{
+  "agentType": "orchestrator",
+  "agentId": "campaign_in_a_box",
+  "version": "0.1.0",
+  "compositionStatus": "0.1.0-draft — asset types taken verbatim from the Phase 1 spec vocabulary; pending Marketing Lead sign-off",
+  "composition": [
+    { "assetType": "flagship_blog", "label": "Flagship blog (researched long-form)", "required": true, "volumeCap": 1, "playbook": "blog", "isResearchedBlog": true, "reviewGate": "flagship" },
+    { "assetType": "email_touchpoints", "label": "Email touchpoint copy set", "required": true, "volumeCap": 3, "playbook": "email", "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "linkedin_posts", "label": "LinkedIn posts", "required": true, "volumeCap": 4, "playbook": null, "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "faq_service_page", "label": "FAQ / service-page copy", "required": true, "volumeCap": 1, "playbook": "service_page", "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "community_draft", "label": "Community draft", "required": false, "volumeCap": 1, "playbook": null, "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "external_one_pager", "label": "External one-pager", "required": true, "volumeCap": 1, "playbook": null, "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "battle_card", "label": "Battle card (internal)", "required": false, "volumeCap": 1, "playbook": null, "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "call_scripts", "label": "Call scripts (internal)", "required": true, "volumeCap": 1, "playbook": null, "isResearchedBlog": false, "reviewGate": "derivative" },
+    { "assetType": "enablement_notes", "label": "Sales enablement notes (internal)", "required": false, "volumeCap": 1, "playbook": null, "isResearchedBlog": false, "reviewGate": "derivative" }
+  ],
+  "capacity": { "researchedBlogsPerMonth": 2 },
+  "reviewGates": { "flagshipBusinessDays": 3, "derivativeBusinessDays": 2 },
+  "draftingBusinessDays": { "flagship": 1, "derivative": 1 },
+  "thresholds": {
+    "thinIntelUnverifiedShare": 0.3,
+    "reuseFitness": 0.75,
+    "adaptFitness": 0.4
+  },
+  "fitnessWeights": { "assetType": 0.35, "vertical": 0.25, "businessUnit": 0.15, "topic": 0.25 },
+  "confirmationSlaBusinessDays": 2,
+  "naming": {
+    "campaignFolder": "{year}-Q{quarter}-{slug}",
+    "assetFile": "{campaign_slug}-{asset_type}-v{version}"
+  },
+  "workspaceFolders": ["brief", "drafts", "final"],
+  "routingMap": [
+    { "reason": "thin_intel", "routesTo": "marketing-lead-queue" },
+    { "reason": "unsourced_claim", "routesTo": "marketing-lead-queue" },
+    { "reason": "infeasible_timeline", "routesTo": "marketing-lead-queue" },
+    { "reason": "completeness_block", "routesTo": "marketing-lead-queue" },
+    { "reason": "conflicting_canonical_assets", "routesTo": "marketing-lead-queue" },
+    { "reason": "naming_ambiguous", "routesTo": "marketing-lead-queue" },
+    { "reason": "confirmation_pending", "routesTo": "marketing-lead-queue" },
+    { "reason": "missing_confirmation_record", "routesTo": "marketing-lead-queue" },
+    { "reason": "hash_mismatch", "routesTo": "aicoe-queue" },
+    { "reason": "workspace_failure", "routesTo": "aicoe-queue" },
+    { "reason": "tool_failure", "routesTo": "aicoe-queue" }
+  ],
+  "reasonCodes": [
+    "thin_intel",
+    "unsourced_claim",
+    "infeasible_timeline",
+    "completeness_block",
+    "missing_confirmation_record",
+    "hash_mismatch",
+    "naming_ambiguous",
+    "conflicting_canonical_assets",
+    "confirmation_pending",
+    "workspace_failure",
+    "tool_failure",
+    "sla_breach"
+  ],
+  "brandRulesVersion": "0.1.0-draft"
+}
