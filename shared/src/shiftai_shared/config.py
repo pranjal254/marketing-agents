@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["production", "staging", "dev"]
@@ -50,6 +50,17 @@ class SharedSettings(BaseSettings):
     azure_openai_api_key: SecretStr | None = Field(default=None, alias="AZURE_OPENAI_API_KEY")
     azure_openai_deployment: str | None = Field(default=None, alias="AZURE_OPENAI_DEPLOYMENT")
     azure_openai_api_version: str = Field(default="2024-06-01", alias="AZURE_OPENAI_API_VERSION")
+    # Contracted USD price per 1M tokens for the Azure deployment. When set, dev
+    # runs are costed at the Azure model's own rates; when unset, telemetry falls
+    # back to the production target model's rate card (a modeled cost, never a
+    # guessed Azure price).
+    azure_openai_rate_input: float | None = Field(default=None, alias="AZURE_OPENAI_RATE_INPUT")
+    azure_openai_rate_output: float | None = Field(default=None, alias="AZURE_OPENAI_RATE_OUTPUT")
+
+    @field_validator("azure_openai_rate_input", "azure_openai_rate_output", mode="before")
+    @classmethod
+    def _blank_rate_is_unset(cls, value: object) -> object:
+        return None if value == "" else value
 
     # Microsoft Graph (client-credential flow)
     graph_tenant_id: str | None = Field(default=None, alias="GRAPH_TENANT_ID")
@@ -64,3 +75,20 @@ class SharedSettings(BaseSettings):
 
 def load_settings() -> SharedSettings:
     return SharedSettings()
+
+
+def runtime_rate_card(settings: SharedSettings) -> dict[str, tuple[float, float]]:
+    """The fleet rate card for this process: the default Claude card plus the Azure
+    deployment's contracted rates when configured (keyed by deployment name; model
+    ids with version suffixes match by prefix at lookup time)."""
+    card = dict(DEFAULT_RATE_CARD)
+    if (
+        settings.azure_openai_deployment
+        and settings.azure_openai_rate_input is not None
+        and settings.azure_openai_rate_output is not None
+    ):
+        card[settings.azure_openai_deployment] = (
+            settings.azure_openai_rate_input,
+            settings.azure_openai_rate_output,
+        )
+    return card

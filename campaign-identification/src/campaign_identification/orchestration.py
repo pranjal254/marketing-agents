@@ -20,14 +20,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 from shiftai_shared.business_capability import DecisionAgentConfig
-from shiftai_shared.config import SharedSettings
+from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse
 from shiftai_shared.prompting import PROMPT_TEMPLATE_ID, PROMPT_TEMPLATE_VERSION
 from shiftai_shared.resilience import IdempotencyStore, execute_idempotent
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
-from shiftai_shared.telemetry.envelope import RunContext, new_id, rate_card_cost
+from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
 
 from campaign_identification import (
     AGENT_TYPE,
@@ -98,6 +98,9 @@ class AgentDeps:
 class CampaignIdentificationAgent:
     def __init__(self, deps: AgentDeps) -> None:
         self.deps = deps
+        # Fleet rate card: cost is priced by the model that actually answered
+        # (Claude in production, the Azure deployment's contracted rates in dev).
+        self.rate_card = runtime_rate_card(deps.settings)
         self.emitter = StsEmitter(
             deps.sink,
             tenant_id=deps.settings.shiftai_tenant_id,
@@ -221,11 +224,13 @@ class CampaignIdentificationAgent:
                     deps.provider, system_blocks(config), request
                 )
             if extraction_response is not None:
-                cost = rate_card_cost(
+                cost = response_cost(
+                    extraction_response.model,
                     MODEL_ID,
                     extraction_response.input_tokens,
                     extraction_response.output_tokens,
                     extraction_response.cache_read_input_tokens,
+                    rate_card=self.rate_card,
                 )
                 ctx.add_cost(cost)
                 attrs: dict[str, Any] = {
@@ -561,11 +566,13 @@ class CampaignIdentificationAgent:
                 aspects=aspects,
             )
         if response is not None:
-            cost = rate_card_cost(
+            cost = response_cost(
+                response.model,
                 MODEL_ID,
                 response.input_tokens,
                 response.output_tokens,
                 response.cache_read_input_tokens,
+                rate_card=self.rate_card,
             )
             ctx.add_cost(cost)
             attrs: dict[str, Any] = {
@@ -1065,11 +1072,13 @@ class CampaignIdentificationAgent:
     def _emit_l3_decision(
         self, ctx: RunContext, output: ClassifyOutput, response: LLMResponse
     ) -> None:
-        cost = rate_card_cost(
+        cost = response_cost(
+            response.model,
             MODEL_ID,
             response.input_tokens,
             response.output_tokens,
             response.cache_read_input_tokens,
+            rate_card=self.rate_card,
         )
         ctx.add_cost(cost)
         span = ctx.spans[-1]

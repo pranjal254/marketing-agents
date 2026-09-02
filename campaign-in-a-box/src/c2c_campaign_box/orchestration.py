@@ -30,13 +30,13 @@ from datetime import UTC, date, datetime
 from typing import Any, Literal
 
 from shiftai_shared.brand import BrandRules
-from shiftai_shared.config import SharedSettings
+from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse
 from shiftai_shared.resilience import IdempotencyStore, execute_idempotent
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
-from shiftai_shared.telemetry.envelope import RunContext, new_id, rate_card_cost
+from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
 
 from c2c_campaign_box import (
     AGENT_TYPE,
@@ -120,6 +120,9 @@ class OrchestratorDeps:
 class CampaignBoxOrchestrator:
     def __init__(self, deps: OrchestratorDeps) -> None:
         self.deps = deps
+        # Fleet rate card: Claude defaults + the Azure deployment's contracted
+        # rates when configured — cost is priced by the model that answered.
+        self.rate_card = runtime_rate_card(deps.settings)
         self.emitter = StsEmitter(
             deps.sink,
             tenant_id=deps.settings.shiftai_tenant_id,
@@ -1168,9 +1171,9 @@ class CampaignBoxOrchestrator:
         confidence: float,
         extra: dict[str, Any],
     ) -> None:
-        cost = rate_card_cost(
-            MODEL_ID, response.input_tokens, response.output_tokens,
-            response.cache_read_input_tokens,
+        cost = response_cost(
+            response.model, MODEL_ID, response.input_tokens, response.output_tokens,
+            response.cache_read_input_tokens, rate_card=self.rate_card,
         )
         ctx.add_cost(cost)
         attrs: dict[str, Any] = {

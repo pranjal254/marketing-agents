@@ -20,6 +20,22 @@ def new_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
+def _lookup_rates(
+    card: dict[str, tuple[float, float]], model: str
+) -> tuple[float, float] | None:
+    """Exact key first; otherwise the longest card key the model id starts with
+    (providers append version/date suffixes to the base model name)."""
+    exact = card.get(model)
+    if exact is not None:
+        return exact
+    best: tuple[float, float] | None = None
+    best_len = 0
+    for key, rates in card.items():
+        if model.startswith(key) and len(key) > best_len:
+            best, best_len = rates, len(key)
+    return best
+
+
 def rate_card_cost(
     model: str,
     input_tokens: int,
@@ -29,7 +45,7 @@ def rate_card_cost(
 ) -> float | None:
     """USD cost from the rate card; None when the model has no card (emit absent, never guess)."""
     card = rate_card if rate_card is not None else DEFAULT_RATE_CARD
-    rates = card.get(model)
+    rates = _lookup_rates(card, model)
     if rates is None:
         return None
     in_rate, out_rate = rates
@@ -40,6 +56,28 @@ def rate_card_cost(
         + output_tokens * out_rate
     ) / 1_000_000
     return round(cost, 6)
+
+
+def response_cost(
+    response_model: str,
+    request_model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_input_tokens: int = 0,
+    rate_card: dict[str, tuple[float, float]] | None = None,
+) -> float | None:
+    """Cost priced against the model that ACTUALLY answered (multi-provider fleets:
+    a dev run on an Azure model must not be billed at Claude rates). Falls back to
+    the requested/target model's rates only when the responding model has no card
+    entry — the dev substitute is then a modeled production cost."""
+    actual = rate_card_cost(
+        response_model, input_tokens, output_tokens, cache_read_input_tokens, rate_card
+    )
+    if actual is not None:
+        return actual
+    return rate_card_cost(
+        request_model, input_tokens, output_tokens, cache_read_input_tokens, rate_card
+    )
 
 
 @dataclass
