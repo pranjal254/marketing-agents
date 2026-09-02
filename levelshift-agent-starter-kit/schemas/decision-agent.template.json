@@ -1,0 +1,31 @@
+{
+  "agentType": "decision",
+  "agentId": "<<AGENT_ID>>",
+  "version": "0.0.1-template",
+  "intakeSchema": [
+    { "field": "<<field_name>>", "type": "text", "required": true }
+  ],
+  "policyRules": [
+    { "id": "<<rule_id>>", "condition": "<<JSON_LOGIC_EXPRESSION>>", "resultActionClass": "<<action_class_id>>" }
+  ],
+  "actionClassTaxonomy": [
+    { "id": "<<action_class_id>>", "label": "<<Label>>", "description": "<<what this action class means>>" }
+  ],
+  "authorityEnvelope": {
+    "impactCeiling": { "<<tier>>": "<<rule>>" },
+    "reversibilityRules": { "<<condition>>": "<<reversibility_class>>" },
+    "domainBoundary": "<<what this agent is and isn't allowed to touch>>",
+    "dataRecencyMaxDays": 14
+  },
+  "routingMap": [
+    { "uncertaintyType": "confidence_only", "routesTo": "<<default_reviewer_queue>>" }
+  ],
+  "tierThresholds": {
+    "tier1": "<<condition>>",
+    "tier2": "<<condition>>",
+    "tier3": "<<condition>>"
+  },
+  "reasonCodes": ["<<reason_code_1>>", "<<reason_code_2>>"],
+  "precedentDecayDays": 90,
+  "reasoningProvider": "claude"
+}

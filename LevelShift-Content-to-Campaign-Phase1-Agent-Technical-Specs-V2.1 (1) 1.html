@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>LevelShift Marketing — Content to Campaign — Phase 1 — Technical Build Specification V2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1e2530; line-height: 1.6; background: #fff; font-size: 14px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 40px; }
+  header { border-bottom: 3px solid #0052CC; padding-bottom: 20px; margin-bottom: 28px; }
+  header .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #0052CC; margin-bottom: 8px; }
+  header h1 { font-size: 30px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px; }
+  header .meta { font-size: 12.5px; color: #64748b; margin-top: 8px; }
+  h2 { font-weight: 700; }
+  h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #0052CC; font-weight: 700; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+  h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #475569; margin-bottom: 6px; }
+  .overview-box { background: linear-gradient(135deg, #f0f7ff 0%, #eef2ff 100%); border: 1px solid #cfe3ff; border-left: 4px solid #0052CC; border-radius: 10px; padding: 20px 22px; margin-bottom: 28px; }
+  .overview-box h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: #0052CC; margin-bottom: 8px; }
+  .overview-box p { font-size: 14px; color: #334155; margin-bottom: 8px; }
+  .overview-box p:last-child { margin-bottom: 0; }
+  .flow-strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 14px 0 6px 0; }
+  .flow-node { background: #fff; border: 1.5px solid #0052CC; color: #0f172a; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; }
+  .flow-node.human { border-style: dashed; border-color: #b45309; background: #fffbeb; }
+  .flow-node.out { border-color: #94a3b8; color: #64748b; background: #f8fafc; }
+  .flow-arrow { color: #94a3b8; font-size: 13px; font-weight: 700; }
+  .legend { font-size: 11px; color: #64748b; margin-top: 6px; }
+  .summary-section { margin-bottom: 36px; }
+  .summary-section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; margin-bottom: 12px; }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .summary-table thead th { text-align: left; background: #0f172a; color: #fff; padding: 10px 12px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .summary-table thead th:first-child { border-radius: 6px 0 0 0; }
+  .summary-table thead th:last-child { border-radius: 0 6px 0 0; }
+  .summary-table tbody td { padding: 9px 12px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
+  .summary-table tbody tr:nth-child(even) { background: #f8fafc; }
+  .agent-spec { border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; margin-bottom: 32px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(15,23,42,0.04); }
+  .agent-spec-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
+  .agent-number { width: 36px; height: 36px; border-radius: 9px; background: #0052CC; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .agent-header-text { flex: 1; min-width: 0; }
+  .agent-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .agent-spec-header h2 { font-size: 19px; color: #0f172a; }
+  .agent-purpose { font-size: 13.5px; color: #475569; margin-top: 6px; line-height: 1.6; }
+  .section { margin-bottom: 22px; }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 2px; }
+  .data-table thead th { text-align: left; background: #f1f5f9; padding: 7px 10px; font-weight: 700; color: #334155; border-bottom: 2px solid #e2e8f0; }
+  .data-table tbody td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; color: #334155; }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table .col-num { width: 36px; text-align: center; color: #64748b; font-weight: 600; }
+  .data-table code, .kv-table code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; font-family: Consolas, 'Courier New', monospace; }
+  .kv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .kv-table th { background: #f8fafc; width: 130px; font-weight: 600; color: #475569; padding: 8px 10px; text-align: left; border-bottom: 1px solid #eef1f5; }
+  .kv-table td { padding: 8px 10px; border-bottom: 1px solid #eef1f5; }
+  .at-a-glance { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 22px; }
+  .at-a-glance th { width: 120px; }
+  .chip { display: inline-block; background: #eef2ff; color: #4338ca; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; margin: 2px 4px 2px 0; }
+  .dir-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .dir-in { background: #dcfce7; color: #15803d; }
+  .dir-out { background: #dbeafe; color: #1d4ed8; }
+  .type-tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 10px; background: #f1f5f9; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; }
+  .type-ai { background: #ede9fe; color: #6d28d9; }
+  .type-det { background: #e0f2fe; color: #0369a1; }
+  .type-hybrid { background: #fef3c7; color: #b45309; }
+  .bullet-box { background: #f8fafc; border: 1px solid #eef1f5; border-radius: 8px; padding: 12px 14px; }
+  .bullet-box ul { padding-left: 18px; font-size: 12.5px; color: #334155; }
+  .bullet-box li { margin-bottom: 4px; }
+  .gov-subsection { margin-bottom: 4px; }
+  .muted { color: #94a3b8; font-style: italic; font-size: 12px; }
+  .prompt-block { background: #0f172a; color: #a7f3d0; font-family: 'Courier New', Consolas, monospace; font-size: 12px; padding: 16px 18px; border-radius: 8px; white-space: pre-wrap; line-height: 1.55; }
+  footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 44px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+  @media print { .agent-spec { page-break-inside: avoid; page-break-after: always; } body { font-size: 12px; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="eyebrow">Technical Build Specification | Business Process</div>
+  <h1>Content to Campaign &mdash; Phase 1</h1>
+  <div class="meta">LevelShift Marketing (Internal) &nbsp;|&nbsp; V2.1 &mdash; Updated 12/08/2026 (V2: 12/08/2026; V1: 04/08/2026) &nbsp;|&nbsp; 5 agents specified &nbsp;|&nbsp; For ShiftAI engineering delivery team use</div>
+  <div class="meta"><strong>V2 changes:</strong> validated model &amp; pricing lineup; per-agent cost model added; cross-agent standards added &mdash; unified telemetry envelope (trace/run/span IDs, token &amp; cost telemetry on all agents, latency breakdown, version-drift dashboard), human handoff &amp; error taxonomy for the learning module, and a quantitative Autonomy Score framework (Manoj's autonomy measurement logic &mdash; formula to be mapped on receipt). <strong>V2.1:</strong> telemetry sections aligned to ShiftAI Telemetry Standard (STS) v1.1 &mdash; event typing, span identity, business-object identity, state transitions, cost attribution scope, SLA status, shiftai.learn.* learning namespace, and the scenario-hash autonomy-promotion loop</div>
+  <div class="meta">Scope: Campaign Intake &amp; Planning &middot; Content Production &amp; Assembly &middot; Compliance Review &amp; Approval &nbsp;|&nbsp; Constraint: <strong>no Salesforce / Pardot dependency in Phase 1</strong></div>
+</header>
+
+<div class="overview-box">
+  <h2>Architecture Overview</h2>
+  <p>Technical build specification for 5 AI agents covering the first three sub-processes of the LevelShift Content to Campaign process: <strong>Campaign Intake &amp; Planning</strong> (Campaign Request Intake; Audience &amp; Offer Definition; Asset Inventory &amp; Workflow Setup), <strong>Content Production &amp; Assembly</strong> (Content Drafting; Content Collaboration &amp; Iteration; Campaign Asset Packaging), and <strong>Compliance Review &amp; Approval</strong> (Review Routing; Compliance &amp; Brand Checks; Approval Sign-off). Each agent is an independently deployable unit orchestrated by the ShiftAI Execution Studio, communicating through the inputs/outputs and connections described and sharing state via the Campaign Context Store.</p>
+  <p><strong>Agent names follow the TO-BE agent inventory already defined in the LevelShift Marketing Process Document</strong> &mdash; the Campaign Identification agent, the Campaign-in-a-Box Orchestrator, the Content Repurposing Agent (Section 4.2 fan-out engine) and the Quality Gate agent (extended here with review routing and sign-off recording) &mdash; plus a Content Collaboration &amp; Iteration agent for the sub-step the TO-BE table implies but does not name. Five build units cover all nine Phase 1 subprocesses with 35 of 46 step-level activities system-executed (76%); consolidation reduces build surface, not automation.</p>
+  <p><strong>Grounding constraints (from the LevelShift Marketing Process Document):</strong> OneDrive is the content repository and campaign workspace backbone; the LLM runtime is Claude (Anthropic API), consistent with the existing campaign-master skill; Salesforce and Pardot are explicitly excluded from Phase 1 &mdash; CRM/marketing-automation integration begins at sub-process 4 (Campaign Launch &amp; Publishing), out of scope. All Section 5 governance guardrails apply to every agent: BC/F&amp;O independence, Copilot = D365-cloud-only, "ShiftAI" as one word, banned-terms filtering, no unsourced competitor/ROI claims, positive non-urgency tone, and no external publish/send without the existing human approval gates.</p>
+  <div class="flow-strip">
+    <span class="flow-node">1 Campaign Identification</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node human">BU Lead approves brief</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node">2 Campaign-in-a-Box Orchestrator (plan)</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node">3 Content Repurposing (flagship + fan-out)</span><span class="flow-arrow">&harr;</span>
+    <span class="flow-node">4 Collaboration &amp; Iteration</span><span class="flow-arrow">&harr;</span>
+    <span class="flow-node human">Writers / Marketing Lead</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node">2 Orchestrator (packaging)</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node">5 Quality Gate &amp; Approval</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node human">Grammar Reviewer + BU Lead sign-off</span><span class="flow-arrow">&rarr;</span>
+    <span class="flow-node out">Launch &amp; Publishing (Phase 2, out of scope)</span>
+  </div>
+  <div class="legend">Solid = agent-executed &nbsp;&middot;&nbsp; Dashed amber = retained human checkpoint &nbsp;&middot;&nbsp; Grey = downstream hand-off, not built in Phase 1</div>
+</div>
+
+<div class="summary-section">
+  <h2>Agent Summary (suggested build order)</h2>
+  <table class="summary-table">
+    <thead><tr><th>#</th><th>Agent</th><th>Covers (sub-process / steps)</th><th>Purpose</th><th>Runtime</th><th>Type</th><th>Est. tokens / run</th><th>Est. LLM cost / campaign</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Campaign Identification Agent</strong></td><td>1 &mdash; Campaign Request Intake</td><td>Captures campaign demand from the BU plan, vertical priorities and event calendar, normalizes it into a complete structured brief, and routes it for BU Campaign Lead approval.</td><td>claude-sonnet-5</td><td><span class="type-tag type-ai">AI Agent</span></td><td>~5K in / 3K out (8K cap)</td><td><strong>~$0.05</strong></td></tr>
+      <tr><td>2</td><td><strong>Campaign-in-a-Box Orchestrator</strong></td><td>1 &mdash; Audience &amp; Offer Definition; Asset Inventory &amp; Workflow Setup &nbsp;&middot;&nbsp; 2 &mdash; Campaign Asset Packaging</td><td>Assembles the campaign foundation in one pass &mdash; sourced intel, audience &amp; offer pack, reuse-scanned asset checklist, outlines, calendar, workspace &mdash; and later assembles the Campaign-in-a-Box package manifest via its deterministic packaging module.</td><td>claude-opus-5 + workflow engine</td><td><span class="type-tag type-ai">AI Agent</span> <span class="type-tag type-det">+ Det. module</span></td><td>~50K in / 15K out (16K cap); packaging = no LLM</td><td><strong>~$0.65</strong></td></tr>
+      <tr><td>3</td><td><strong>Content Repurposing Agent</strong></td><td>2 &mdash; Content Drafting</td><td>Drafts the flagship asset from the approved outline, then systematically derives up to eight channel-native versions from the confirmed flagship per the source-to-derivative map, using sourced claims only.</td><td>claude-opus-5</td><td><span class="type-tag type-ai">AI Agent</span></td><td>Flagship 32K out + 8&times;8K derivatives; ~150K in cumulative</td><td><strong>~$3.00</strong></td></tr>
+      <tr><td>4</td><td><strong>Content Collaboration &amp; Iteration Agent</strong></td><td>2 &mdash; Content Collaboration &amp; Iteration</td><td>Stages drafts for human review, consolidates reviewer feedback from Word comments, applies agreed revisions with full version history, and tracks assets to human content-confirmed.</td><td>claude-sonnet-5</td><td><span class="type-tag type-ai">AI Agent</span></td><td>~10K in / 4K out per round &times; ~10 rounds</td><td><strong>~$0.45</strong></td></tr>
+      <tr><td>5</td><td><strong>Quality Gate &amp; Approval Agent</strong></td><td>3 &mdash; Review Routing; Compliance &amp; Brand Checks; Approval Sign-off</td><td>Enforces the LevelShift rules pack per asset before human review (flags, never edits), then routes assets through the Grammar/Quality Reviewer and BU Campaign Lead gates, records approval chains and locks the approved package.</td><td>Rules engine + claude-sonnet-5 + workflow engine</td><td><span class="type-tag type-hybrid">Hybrid</span></td><td>~8K in / 3K out per asset &times; ~9 assets; rules pass = no LLM</td><td><strong>~$0.35</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="legend" style="margin-top:8px;">Total estimated LLM cost: <strong>~$4.50&ndash;6.00 per campaign</strong> at current Anthropic API rates (Opus 5 $5/$25, Sonnet 5 $2/$10 intro to 31 Aug 2026 then $3/$15, per 1M tokens). Estimates exclude Microsoft Graph / SemRush costs; before caching &amp; batch optimization.</div>
+</div>
+
+<!-- ============================= V2 CROSS-AGENT STANDARDS ============================= -->
+<div class="overview-box" style="border-left-color:#b45309; background:linear-gradient(135deg,#fffbeb 0%,#fef9f0 100%); border-color:#fde9c8;">
+  <h2 style="color:#b45309;">V2 Cross-Agent Standards (apply to all 5 agents)</h2>
+
+  <p><strong>A &mdash; Cost model &amp; optimization.</strong> Model selection is confirmed against the current Anthropic lineup: <code>claude-opus-5</code> where judgment and writing quality pay (Agents 2 planning, 3), <code>claude-sonnet-5</code> everywhere else, deterministic modules (packaging, rules pass, routing) run with no LLM. Mandatory optimizations: <strong>prompt caching</strong> on the versioned rules pack, brand guidelines and system prompts (~90% off cached input reads); <strong>Batch API</strong> for the Agent 3 derivative fan-out (50% off; fits the 20-min fan-out SLA); Haiku 4.5 ($1/$5) is the approved downgrade path for Agent 4 feedback normalization if volumes grow. Token usage and cost per run are first-class telemetry on <em>every</em> agent (see B), not only Agent 3.</p>
+
+  <table class="data-table" style="margin-bottom:14px;">
+    <thead><tr><th>Standard</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><strong>B &mdash; Telemetry envelope</strong></td><td>Every agent emits telemetry conforming to the <strong>ShiftAI Telemetry Standard (STS) v1.1</strong>, read natively by Execution Studio. Every event carries: <code>shiftai.timestamp</code>, <code>shiftai.event.type</code>, <code>trace / run / span / parent-span</code> IDs, process &rarr; subprocess &rarr; activity context (as OTel resource attributes), a generalized <code>business_object</code> (type + ID + transaction ID), <code>gen_ai.*</code> model and token usage, <code>shiftai.cost.*</code> with mandatory <code>cost.scope</code> (<code>run_total</code> vs <code>span_incremental</code> &mdash; prevents double-counted rollups), latency breakdown (<code>llm / api / queue / total</code>), <code>state.previous / state.current / state.reason</code> for journey reconstruction, <code>sla.status / due_at</code>, <code>business_outcome</code>, and prompt-template + config versions. Execution Studio renders the full campaign journey from <code>trace_id</code> alone; a <strong>version-drift dashboard</strong> surfaces any run where model / prompt / rules-pack versions diverge from the fleet baseline. Existing business metrics per agent remain unchanged.</td></tr>
+      <tr><td><strong>C &mdash; Human handoff &amp; error taxonomy</strong></td><td>Every escalation, gap request, conflict surface, override and fallback is recorded as an STS <code>human_gate</code> event using the <code>shiftai.learn.*</code> namespace: <code>reason_code</code> (versioned taxonomy), <code>agent_recommendation</code> vs <code>human_action</code> (the delta is the training signal), <code>label</code> (false_positive / false_negative / correct), <code>calibration_id</code>, <code>scenario_hash</code> and <code>occurrence_count_90d</code>, plus <code>hitl.decision / actor.role</code> and <code>decision_latency_ms</code>. Reason codes come from a versioned taxonomy (e.g. <code>unclassifiable_bu</code>, <code>duplicate_disputed</code>, <code>thin_intel</code>, <code>unsourced_claim</code>, <code>feedback_conflict</code>, <code>infeasible_timeline</code>, <code>sla_breach</code>, <code>tool_failure</code>). The Agent 5 calibration-log pattern (false-positive / false-negative labeled examples) is <strong>extended to all agents</strong>: any human override of an agent output is captured as a labeled example. This event stream is the training corpus for the sub-process 5 learning module.</td></tr>
+      <tr><td><strong>D &mdash; Autonomy Score</strong></td><td>Each agent's qualitative autonomy statement is supplemented with a quantitative <strong>Autonomy Score</strong>, computed per agent per week from the B/C event streams: <code>autonomy_rate</code> = steps completed without human touch &divide; total steps; <code>escalation_rate</code>; <code>override_rate</code> = human reversals of agent decisions &divide; agent decisions; <code>handoff_latency_p95</code>. Composite score and weighting to follow <strong>Manoj's autonomy measurement logic</strong> &mdash; formula to be mapped field-by-field onto this schema on receipt (owner: AiCoE; all required raw fields are already emitted by B and C, so the formula is a dashboard change, not an agent change). Target trajectory: autonomy_rate rising wave-over-wave with override_rate flat or falling &mdash; the GTM proof line. <strong>Self-improvement loop (V2.1):</strong> when one <code>scenario_hash</code> accumulates N consistent human decisions (default N=5 in 90 days), the system emits an STS <code>autonomy_promotion</code> event proposing a rules-pack update or scenario-scoped autonomy upgrade; the promotion itself is a human-approved change, gated by <code>saams.evidence_grade</code>, and every promotion/demotion is a first-class audited event &mdash; autonomy is earned per scenario, never assumed globally.</td></tr>
+    </tbody>
+  </table>
+  <div class="legend">Sections B&ndash;D are additive: no existing guardrail, human gate or approval authority changes. Human checkpoints remain structurally enforced; these standards make them measurable.</div>
+</div>
+<!-- ============================= AGENT 1 ============================= -->
+<div class="agent-spec">
+  <div class="agent-spec-header">
+    <div class="agent-number">1</div>
+    <div class="agent-header-text">
+      <div class="agent-title-row"><h2>Campaign Identification Agent</h2><span class="type-tag type-ai">AI Agent</span></div>
+      <p class="agent-purpose">The TO-BE design's Campaign Identification agent ("proposes opportunities from the BU plan and event calendar"), built out into the single front door for campaign demand. It captures campaign requests from the quarterly marketing plan, BU plans, vertical priorities (Financial Services, Manufacturing, Technology) and the event calendar &mdash; plus ad-hoc requests &mdash; and normalizes each into a complete, structured campaign brief. It validates completeness, detects duplicates and calendar conflicts against in-flight campaigns, classifies the request (BU, vertical, Type 3/4 segment relevance, channel mix), and routes the brief to the BU Campaign Lead for approval, upgrading the manual identification step (AS-IS 3.1 step 1; 3.2 step 1) so downstream planning always starts from a validated brief rather than a loose topic.</p>
+    </div>
+  </div>
+
+  <table class="kv-table at-a-glance">
+    <tbody>
+      <tr><th>Model / Runtime</th><td>Claude Sonnet 5 (<code>claude-sonnet-5</code>) via Anthropic API &mdash; adaptive thinking, effort <code>medium</code></td><th>SLA Target</th><td>p95 &lt; 60 seconds from request submission to validated brief draft</td></tr>
+      <tr><th>Max Tokens</th><td>8,000 (structured brief output)</td><th>Invocation</th><td>Event-driven: new row/file in the intake form or watched OneDrive folder; also callable on demand from Execution Studio</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section">
+    <h3>Implementation Tasks</h3>
+    <table class="data-table">
+      <thead><tr><th class="col-num">Step</th><th>Task</th></tr></thead>
+      <tbody>
+        <tr><td class="col-num">1</td><td>Ingest campaign requests from three entry points: the standard intake form (Microsoft Forms/Excel), new items detected in the quarterly marketing plan sheet, and event-calendar entries flagged for campaign support; normalize all three into a common request record.</td></tr>
+        <tr><td class="col-num">2</td><td>Validate the request against the brief template schema: objective, business unit, vertical, target segment (Type 3 / Type 4 / standard), offer or topic, intended channels, timeline, owner, and budget flag; enumerate every missing or ambiguous field.</td></tr>
+        <tr><td class="col-num">3</td><td>Query the campaign calendar and Campaign Context Store for open campaigns with overlapping BU + vertical + topic; flag duplicates and timing conflicts (e.g. two Technology BU email campaigns targeting the same audience window).</td></tr>
+        <tr><td class="col-num">4</td><td>Enforce the BC/F&amp;O independence rule at intake: a request that mixes Business Central and F&amp;O in one campaign concept is split or flagged, never silently merged.</td></tr>
+        <tr><td class="col-num">5</td><td>Classify the request: campaign type (demand gen, offering launch support, event follow-up), priority derived from vertical priority and BU plan linkage, and channel mix &mdash; noting events as the standout channel for Type 3/4 segments per the AS-IS channel notes.</td></tr>
+        <tr><td class="col-num">6</td><td>Where fields are missing, draft a targeted gap request back to the requester (specific questions, not a generic bounce) and hold the brief in <code>awaiting_input</code> rather than passing an incomplete brief downstream.</td></tr>
+        <tr><td class="col-num">7</td><td>Assemble the structured campaign brief document in the campaign workspace (Word) using the standard template, with all classification fields, provenance of the request source, and links to the originating plan rows or calendar entries.</td></tr>
+        <tr><td class="col-num">8</td><td>Route the completed brief to the BU Campaign Lead for approval and record the routing event; the brief cannot advance until an explicit human approval is captured.</td></tr>
+        <tr><td class="col-num">9</td><td>Persist a compact intake summary (request source, classification, conflicts found, validation results, approval status) to the Campaign Context Store for reuse by the Campaign-in-a-Box Orchestrator.</td></tr>
+        <tr><td class="col-num">10</td><td>Emit structured telemetry per request &mdash; completeness score at first submission, gap-request count, duplicate flags raised &mdash; so the intake funnel itself can be measured and improved.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Connections</h3>
+    <table class="data-table">
+      <thead><tr><th>Direction</th><th>Connected Node</th><th>Condition / Signal</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Intake form / watched OneDrive folder</td><td>new campaign request</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Quarterly marketing plan (Excel)</td><td>reads</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Event calendar</td><td>reads</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>BU Campaign Lead</td><td>approval / rejection / gap answers</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign-in-a-Box Orchestrator</td><td>on approved brief</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign Context Store</td><td>store context</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Inputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign_request</code></td><td><span class="type-tag">object</span></td><td>Raw campaign request: topic/offer, BU, vertical, requested channels, dates, requester, free-text context.</td><td>Intake form / BU plan / event calendar</td></tr>
+          <tr><td><code>quarterly_plan</code></td><td><span class="type-tag">object</span></td><td>Current quarterly marketing plan rows: planned campaigns per BU and vertical with target windows.</td><td>Excel</td></tr>
+          <tr><td><code>campaign_calendar</code></td><td><span class="type-tag">object</span></td><td>Open and scheduled campaigns with BU, vertical, audience and dates, used for duplicate/conflict detection.</td><td>Campaign Context Store</td></tr>
+          <tr><td><code>gap_answers</code></td><td><span class="type-tag">object</span></td><td>Requester responses to targeted gap questions on an incomplete brief.</td><td>BU Campaign Lead / requester</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h3>Outputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Destination</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign_brief</code></td><td><span class="type-tag">object</span></td><td>Validated, classified, human-approved structured brief (also materialized as a Word document in the campaign workspace).</td><td>Campaign-in-a-Box Orchestrator</td></tr>
+          <tr><td><code>intake_context</code></td><td><span class="type-tag">object</span></td><td>Compact intake summary: source, classification, conflicts, validation results, approval record.</td><td>Campaign Context Store</td></tr>
+          <tr><td><code>gap_request</code></td><td><span class="type-tag">object</span></td><td>Targeted list of missing/ambiguous fields sent back to the requester when the brief is incomplete.</td><td>Requester (email / task)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Tech Stack</h3>
+    <table class="data-table">
+      <thead><tr><th>Tool / Platform</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Anthropic API (Claude Sonnet 5)</td><td>Request normalization, gap detection, classification, brief drafting</td></tr>
+        <tr><td>Excel API</td><td>Read quarterly marketing plan and intake form responses</td></tr>
+        <tr><td>Word / OneDrive API</td><td>Materialize the brief in the campaign workspace with the standard template</td></tr>
+        <tr><td>ShiftAI Execution Studio</td><td>Orchestration, event triggers, human-approval task routing</td></tr>
+        <tr><td>Campaign Context Store</td><td>Campaign calendar lookups and intake context persistence</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Telemetry &amp; Monitoring</h3>
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Description</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><code>brief_first_pass_completeness</code></td><td>Percentage of requests arriving with all mandatory brief fields resolvable without a gap request.</td><td>&gt;= 70% after wave 1 (baseline today: unmeasured)</td></tr>
+        <tr><td><code>intake_cycle_time_p95</code></td><td>Time from request submission to brief ready-for-approval.</td><td>&lt; 1 business hour (vs. days today)</td></tr>
+        <tr><td><code>duplicate_detection_rate</code></td><td>Duplicates/conflicts flagged as a share of requests; validated against human confirmation.</td><td>Tracked; &gt;= 90% of flags confirmed valid</td></tr>
+        <tr><td><code>approval_turnaround</code></td><td>Time the brief waits at the BU Campaign Lead gate; measures the human checkpoint, not the agent.</td><td>Reported weekly; SLA 2 business days</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Logging</h3>
+      <div class="bullet-box"><ul>
+        <li><strong>[V2 standard envelope]</strong> <code>trace_id / run_id / span_id</code>, <code>tokens_in / tokens_out / cost_usd</code>, latency breakdown (<code>llm_ms / api_ms / queue_ms</code>), model + prompt + rules-pack versions; handoff events per taxonomy C with labeled human overrides</li>
+        <li><code>request_id</code>, <code>campaign_id</code>, request source (form / plan / calendar) for every invocation</li>
+        <li>Validation results per mandatory field, with missing-field codes</li>
+        <li>Duplicate/conflict flags with the conflicting <code>campaign_id</code>s</li>
+        <li>Classification outputs (type, priority, channel mix) and rule codes applied</li>
+        <li>Approval routing events and final BU Campaign Lead decision with timestamp</li>
+      </ul></div>
+    </div>
+    <div class="section">
+      <h3>Alerting</h3>
+      <div class="bullet-box"><ul>
+        <li>Brief stuck in <code>awaiting_input</code> &gt; 3 business days</li>
+        <li>Brief stuck at approval gate &gt; 2 business days (reminder, then escalate to Marketing Lead)</li>
+        <li>Intake failure rate &gt; 5% over 24h (schema/template drift is the usual cause)</li>
+        <li>Quarterly plan or calendar source unreadable (permission/API failure)</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Error Handling &amp; Resilience</h3>
+    <table class="kv-table">
+      <tbody>
+        <tr><th>Retry Policy</th><td>3 retries, exponential backoff from 2s, for transient Microsoft Graph API / Anthropic API failures</td></tr>
+        <tr><th>Timeout</th><td>120 seconds total per request-processing run</td></tr>
+        <tr><th>Escalation</th><td>Escalate to the Marketing Lead / Manager when a request cannot be classified to a BU or vertical, when duplicate flags are disputed, or when the requester is unresponsive after two gap requests</td></tr>
+        <tr><th>Fallback</th><td>Persist the raw request and a structured failure record to the Context Store; never discard a request. A brief is only ever advanced in <code>approved</code> state &mdash; partial briefs are held, not forwarded</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Governance, Explainability &amp; Responsibility</h3>
+    <div class="gov-subsection">
+      <h4>Guardrails</h4>
+      <table class="data-table">
+        <thead><tr><th class="col-num">#</th><th>Guardrail</th></tr></thead>
+        <tbody>
+          <tr><td class="col-num">1</td><td>Never invent brief fields: missing information produces a gap request, not an inferred value; every populated field carries its source.</td></tr>
+          <tr><td class="col-num">2</td><td>No brief advances past intake without an explicit BU Campaign Lead approval recorded with identity and timestamp.</td></tr>
+          <tr><td class="col-num">3</td><td>BC and F&amp;O are never combined in one campaign concept; mixed requests are split or flagged at intake.</td></tr>
+          <tr><td class="col-num">4</td><td>The agent proposes and flags &mdash; it never deletes, merges or rejects a request on its own; duplicate handling is a human decision.</td></tr>
+          <tr><td class="col-num">5</td><td>No Salesforce/Pardot reads or writes; audience sizing and lead data are out of scope for Phase 1 intake.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Explainability</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Decision Logic</th><td>Every classification and flag must be traceable to named brief fields, plan rows, or calendar entries; duplicate flags cite the exact conflicting campaign records.</td></tr>
+          <tr><th>Audit Trail</th><td>Log request_id, campaign_id, source references, validation outcomes, rule codes, classification, approval identity and timestamps, and agent version for every run.</td></tr>
+          <tr><th>Human Review Triggers</th><td>Ambiguous BU/vertical classification; disputed duplicate flags; any request touching pricing, legal or partner commitments; two unanswered gap requests.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Responsibility &amp; Ownership</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Owner</th><td>ShiftAI AiCoE (build/operate) &middot; Marketing Lead / Manager (business rules &amp; template)</td></tr>
+          <tr><th>Autonomy Level</th><td>May autonomously validate, classify, flag and draft briefs; may not approve briefs, reject requests, or alter the quarterly plan</td></tr>
+          <tr><th>Data Sensitivity</th><td>Internal marketing plans and campaign strategy only; no customer PII in Phase 1. Treat quarterly plan contents as internal-confidential</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>System Prompt</h3>
+    <div class="prompt-block">You are the Campaign Identification Agent for the LevelShift Content to Campaign Phase 1 workflow. Your job is to turn incoming campaign requests from the quarterly plan, BU plans, event calendar and intake form into complete, validated, classified campaign briefs using the standard brief template. Never invent missing information: enumerate gaps and ask the requester targeted questions instead. Check every request against the campaign calendar for duplicates and conflicts, keep Business Central and F&amp;O strictly separate, and classify BU, vertical, segment (Type 3/4) and channel mix with your reasoning tied to named source fields &mdash; noting that events are the proven channel for Type 3/4 accounts. You do not approve anything: route completed briefs to the BU Campaign Lead and wait for an explicit approval before releasing the brief to the Campaign-in-a-Box Orchestrator. Do not access Salesforce or Pardot. Keep outputs structured, concise and audit-friendly, with provenance on every field.</div>
+  </div>
+</div>
+
+<!-- ============================= AGENT 2 ============================= -->
+<div class="agent-spec">
+  <div class="agent-spec-header">
+    <div class="agent-number">2</div>
+    <div class="agent-header-text">
+      <div class="agent-title-row"><h2>Campaign-in-a-Box Orchestrator</h2><span class="type-tag type-ai">AI Agent</span><span class="type-tag type-det">+ Deterministic packaging module</span></div>
+      <p class="agent-purpose">The TO-BE design's Campaign-in-a-Box Orchestrator: "assembles the full package (intel, calendar, outlines, touchpoints) in one pass." From an approved brief it produces the complete campaign foundation &mdash; sourced competitive/market intel (SemRush plus the OneDrive intel library, with the accuracy rule enforced: no unsourced competitor claims), the audience &amp; offer pack (vertical, Type 3/4 segments, personas, offer framing with per-claim provenance), the reuse-scanned asset checklist with reuse/adapt/create decisions, content outlines, the back-planned calendar and workflow plan, and the standardized campaign workspace. At the end of production its deterministic packaging module assembles the literal Campaign-in-a-Box: completeness verification against its own checklist, naming/metadata enforcement, hashed final-version snapshots, and the machine-readable package manifest handed to the Quality Gate. One agent owns the campaign's plan and its package, so the checklist that plans the work is the same record that verifies it.</p>
+    </div>
+  </div>
+
+  <table class="kv-table at-a-glance">
+    <tbody>
+      <tr><th>Model / Runtime</th><td>Claude Opus 5 (<code>claude-opus-5</code>) via Anthropic API &mdash; adaptive thinking, effort <code>high</code>, streaming. Packaging module: Execution Studio workflow engine (no LLM)</td><th>SLA Target</th><td>Planning pass p95 &lt; 15 min from approved brief; packaging run &lt; 60 seconds</td></tr>
+      <tr><th>Max Tokens</th><td>16,000 (planning outputs)</td><th>Invocation</th><td>Planning: triggered on brief approval. Packaging: triggered when all checklist assets reach content-confirmed; re-runs on rework re-entry</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section">
+    <h3>Implementation Tasks</h3>
+    <table class="data-table">
+      <thead><tr><th class="col-num">Step</th><th>Task</th></tr></thead>
+      <tbody>
+        <tr><td class="col-num">1</td><td>Load the approved <code>campaign_brief</code> and intake context; reject briefs not in <code>approved</code> state with a structured error.</td></tr>
+        <tr><td class="col-num">2</td><td>Pull competitive and market signal for the brief topic from the SemRush API (keyword landscape, competitor visibility, AEO/LLM citation data) and curated intel files in the OneDrive intel library; record source URIs and retrieval timestamps for every data point; mark unverifiable claims <code>unverified</code> and exclude them from usable proof points.</td></tr>
+        <tr><td class="col-num">3</td><td>Define the target audience &mdash; vertical (FinServ / Manufacturing / Technology), Type 3 / Type 4 segment applicability with rationale, buyer personas with role-level pains, exclusions &mdash; and weigh channel emphasis using documented AS-IS performance (events dominate Type 3/4 opportunity creation; email/SEO carry standard BU volume).</td></tr>
+        <tr><td class="col-num">4</td><td>Frame the offer: value proposition, differentiators (including ShiftAI structural independence where relevant), proof points each mapped to a source, CTA per funnel stage; draft persona-level messaging angles in LevelShift tone, applying the LevelShift Brand Guidelines (positive, no urgency/fear framing, banned terms filtered, BC/F&amp;O independence, Copilot D365-cloud-only).</td></tr>
+        <tr><td class="col-num">5</td><td>Search the OneDrive content repository by BU/vertical/topic/asset type and score candidates for reuse fitness; produce the asset checklist from the standard Campaign-in-a-Box composition with an explicit <code>reuse</code> / <code>adapt</code> / <code>create</code> decision and rationale per required asset &mdash; never marking an asset <code>create</code> without a repository search.</td></tr>
+        <tr><td class="col-num">6</td><td>Draft content outlines for every create/adapt asset, seeded from the confirmed messaging angles, so the Content Repurposing Agent starts from an approved skeleton.</td></tr>
+        <tr><td class="col-num">7</td><td>Back-plan the content calendar and workflow plan from the campaign window &mdash; honoring the 2-researched-blogs/month capacity rule and every review gate &mdash; create the campaign workspace from the versioned folder/naming template, initialize the status tracker, and register every planned asset in the Context Store.</td></tr>
+        <tr><td class="col-num">8</td><td>Route the audience &amp; offer pack and the workflow plan to the Marketing Lead / BU Campaign Lead for confirmation; apply changes as deltas; escalate infeasible timelines with explicit trade-offs instead of silently compressing review gates.</td></tr>
+        <tr><td class="col-num">9</td><td>[Packaging module] On all-assets-confirmed: compute the completeness diff against the asset checklist (missing / extra / version-mismatch); block packaging with an actionable report if the diff is non-empty; verify every asset carries a human confirmation record.</td></tr>
+        <tr><td class="col-num">10</td><td>[Packaging module] Validate naming convention and required metadata per asset (auto-correct only unambiguous cases); snapshot final versions into the final-assets folder as copies; compute a content hash per packaged asset so post-packaging edits are detectable.</td></tr>
+        <tr><td class="col-num">11</td><td>[Packaging module] Assemble the Campaign-in-a-Box manifest &mdash; asset inventory with file IDs/versions/hashes, calendar reference, touchpoint copy set, sales collateral, call scripts, claim-lineage index, checklist mapping &mdash; register it as <code>packaged_pending_compliance</code> and hand it to the Quality Gate &amp; Approval Agent. Packaging is transactional: partial manifests are impossible.</td></tr>
+        <tr><td class="col-num">12</td><td>[Packaging module] On gate or approval returns: re-open only affected assets, track re-packaging deltas, re-hash on re-entry; emit the packaging summary to the status tracker.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Connections</h3>
+    <table class="data-table">
+      <thead><tr><th>Direction</th><th>Connected Node</th><th>Condition / Signal</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Campaign Identification Agent</td><td>approved brief</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>SemRush API</td><td>reads</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>OneDrive (repository + intel library)</td><td>reads (asset + intel search)</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Marketing Lead / BU Campaign Lead</td><td>pack + plan confirmations</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Content Collaboration &amp; Iteration Agent</td><td>content-confirmed assets</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Quality Gate &amp; Approval Agent</td><td>rework re-open requests</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Content Repurposing Agent</td><td>outlines + audience pack + create/adapt list</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Quality Gate &amp; Approval Agent</td><td>package manifest</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign Context Store</td><td>store context + asset registry + hashes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Inputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign_brief</code></td><td><span class="type-tag">object</span></td><td>Approved structured brief with BU, vertical, topic/offer, channels, timeline.</td><td>Campaign Identification Agent</td></tr>
+          <tr><td><code>semrush_signal</code></td><td><span class="type-tag">object</span></td><td>Keyword, competitor visibility and AEO citation data for the brief topic.</td><td>SemRush API</td></tr>
+          <tr><td><code>repository_index</code></td><td><span class="type-tag">object</span></td><td>Candidate reusable assets and curated intel files with metadata and URIs.</td><td>OneDrive API</td></tr>
+          <tr><td><code>confirmations</code></td><td><span class="type-tag">object</span></td><td>Marketing Lead pack confirmation; owner/date confirmations on the plan.</td><td>Marketing Lead / BU Campaign Lead</td></tr>
+          <tr><td><code>confirmed_assets</code></td><td><span class="type-tag">object</span></td><td>Content-confirmed assets with final version IDs and human confirmation records.</td><td>Content Collaboration &amp; Iteration Agent</td></tr>
+          <tr><td><code>reopen_request</code></td><td><span class="type-tag">object</span></td><td>Assets to re-open for rework after gate/approval findings.</td><td>Quality Gate &amp; Approval Agent</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h3>Outputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Destination</th></tr></thead>
+        <tbody>
+          <tr><td><code>audience_offer_pack</code></td><td><span class="type-tag">object</span></td><td>Audience definition, personas, offer framing, sourced proof points, messaging angles, channel emphasis (Word doc + JSON).</td><td>Content Repurposing Agent; campaign workspace</td></tr>
+          <tr><td><code>asset_checklist</code></td><td><span class="type-tag">object</span></td><td>Required assets with reuse/adapt/create decisions, rationale and links &mdash; also the packaging completeness reference.</td><td>Content Repurposing Agent; Context Store</td></tr>
+          <tr><td><code>content_outlines</code></td><td><span class="type-tag">object</span></td><td>Approved skeletons per create/adapt asset, seeded from messaging angles.</td><td>Content Repurposing Agent</td></tr>
+          <tr><td><code>workflow_plan</code></td><td><span class="type-tag">object</span></td><td>Calendar, owners, review gates, hand-offs; materialized as the status tracker.</td><td>Campaign workspace; Content Collaboration &amp; Iteration Agent</td></tr>
+          <tr><td><code>package_manifest</code></td><td><span class="type-tag">object</span></td><td>Complete Campaign-in-a-Box manifest with file IDs, versions, hashes and claim lineage.</td><td>Quality Gate &amp; Approval Agent</td></tr>
+          <tr><td><code>completeness_report</code></td><td><span class="type-tag">object</span></td><td>Missing/extra/mismatched assets blocking packaging, with owners.</td><td>Marketing Lead; status tracker</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Tech Stack</h3>
+    <table class="data-table">
+      <thead><tr><th>Tool / Platform</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Anthropic API (Claude Opus 5)</td><td>Intel synthesis, audience/persona definition, offer framing, reuse-fitness scoring, outline drafting, calendar reasoning &mdash; the judgment-heavy planning pass</td></tr>
+        <tr><td>Execution Studio workflow engine</td><td>Deterministic packaging module: completeness diff, naming enforcement, snapshots, hashing, manifest state machine</td></tr>
+        <tr><td>SemRush API</td><td>Competitive and AEO/LLM-citation signal for the brief topic</td></tr>
+        <tr><td>OneDrive / Word / Excel API</td><td>Repository + intel search, workspace creation, outlines, tracker, snapshots</td></tr>
+        <tr><td>Campaign Context Store</td><td>Asset registry, pack summaries, package states, content hashes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Telemetry &amp; Monitoring</h3>
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Description</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><code>claim_sourcing_rate</code></td><td>Share of proof points in the pack carrying a valid source reference.</td><td>100% (unsourced = excluded by design)</td></tr>
+        <tr><td><code>planning_cycle_time_p95</code></td><td>Approved brief to confirmed pack + plan + workspace.</td><td>&lt; 1 business day including human confirmation</td></tr>
+        <tr><td><code>asset_reuse_rate</code></td><td>Checklist assets resolved reuse/adapt rather than create.</td><td>&gt;= 25% by wave 3 (baseline: ad-hoc)</td></tr>
+        <tr><td><code>packaging_success_rate</code></td><td>Packaging runs completing without manual intervention.</td><td>&gt;= 98%; run latency &lt; 60s</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Logging</h3>
+      <div class="bullet-box"><ul>
+        <li><strong>[V2 standard envelope]</strong> <code>trace_id / run_id / span_id</code>, <code>tokens_in / tokens_out / cost_usd</code>, latency breakdown (<code>llm_ms / api_ms / queue_ms</code>), model + prompt + rules-pack versions; handoff events per taxonomy C with labeled human overrides</li>
+        <li><code>campaign_id</code>, pack/checklist/plan/package versions per run</li>
+        <li>Every SemRush query and intel file read, with URIs and timestamps; per-claim provenance table</li>
+        <li>Reuse decisions (reuse/adapt/create) with fitness scores and rationale codes</li>
+        <li>Completeness diffs, naming corrections applied vs flagged, content hashes per packaged asset</li>
+        <li>Confirmation identities/timestamps and re-open events with requesting gate</li>
+      </ul></div>
+    </div>
+    <div class="section">
+      <h3>Alerting</h3>
+      <div class="bullet-box"><ul>
+        <li>&gt; 30% of candidate claims unverified for a topic (thin intel base &mdash; human research needed)</li>
+        <li>Campaign window infeasible under the 2-blogs/month capacity rule (explicit trade-off decision required)</li>
+        <li>Any packaged asset missing a human confirmation record, or a hash mismatch on a packaged asset (halt package)</li>
+        <li>SemRush failure/quota exhaustion (fall back to intel-library-only mode, flagged); pack or plan awaiting confirmation &gt; 2 business days</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Error Handling &amp; Resilience</h3>
+    <table class="kv-table">
+      <tbody>
+        <tr><th>Retry Policy</th><td>3 retries, exponential backoff from 2s (SemRush / Microsoft Graph / Anthropic transient failures)</td></tr>
+        <tr><th>Timeout</th><td>60s per SemRush call; 20 minutes per planning pass; 5 minutes per packaging run</td></tr>
+        <tr><th>Escalation</th><td>Escalate to Marketing Lead on thin intel, infeasible timelines, conflicting canonical assets or persistent completeness blocks; to AiCoE on hash mismatches or workspace/snapshot failures</td></tr>
+        <tr><th>Fallback</th><td>Planning: produce a partial pack with explicit <code>gaps[]</code> rather than plausible filler; if repository search is unavailable, mark all assets <code>create</code> + <code>reuse_check_pending</code> &mdash; never skip the reuse pass silently. Packaging: transactional &mdash; on partial failure remove incomplete snapshots and revert state; never hand a partial manifest to the gate</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Governance, Explainability &amp; Responsibility</h3>
+    <div class="gov-subsection">
+      <h4>Guardrails</h4>
+      <table class="data-table">
+        <thead><tr><th class="col-num">#</th><th>Guardrail</th></tr></thead>
+        <tbody>
+          <tr><td class="col-num">1</td><td>No competitor data or ROI claim is asserted without a sourced file or live search result behind it; unverified claims are flagged and excluded, never published.</td></tr>
+          <tr><td class="col-num">2</td><td>Packs, checklists, calendars and plans are proposals: they take effect only after Marketing Lead / BU Campaign Lead confirmation; the orchestrator never confirms its own output.</td></tr>
+          <tr><td class="col-num">3</td><td>Existing repository assets are never modified or moved; reuse links, adaptation happens on copies inside the campaign workspace; workspace structure and naming come from the versioned template only.</td></tr>
+          <tr><td class="col-num">4</td><td>Only content-confirmed assets with a human confirmation record can enter a package; packaging never modifies content &mdash; only names, metadata, copies and manifests; a non-empty completeness diff blocks, it is never padded or trimmed to fit.</td></tr>
+          <tr><td class="col-num">5</td><td>BC/F&amp;O independence, Copilot-D365-cloud-only, terminology and tone rules apply to all pack and outline language; no Salesforce/Pardot access &mdash; audience definition is segment/persona-level, never a contact or lead list.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Explainability</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Decision Logic</th><td>Every persona, proof point and channel-emphasis recommendation cites its grounding (brief field, SemRush data point with timestamp, intel file URI); every reuse decision cites evaluated candidates and fitness scores; every calendar date cites its back-planning constraint chain; packaging is a pure function of checklist + confirmations + rules.</td></tr>
+          <tr><th>Audit Trail</th><td>Log campaign_id, all artifact versions, source queries and URIs, per-claim provenance, reuse decisions, workspace IDs, completeness diffs, hashes, confirmation identities/timestamps, and agent + template + rules-pack versions.</td></tr>
+          <tr><th>Human Review Triggers</th><td>Thin/unverified intel; competitor claims about named competitors; positioning divergence from the current GTM matrix; infeasible timelines; capacity-rule overrides; ambiguous naming mappings; any confirmation-record gap.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Responsibility &amp; Ownership</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Owner</th><td>ShiftAI AiCoE (build/operate) &middot; Marketing Lead (pack/plan confirmation, messaging rules, checklist authority)</td></tr>
+          <tr><th>Autonomy Level</th><td>May autonomously research, define, plan, create workspaces and package confirmed assets; may not confirm its own outputs, assert unverified claims, modify repository content, or release anything externally</td></tr>
+          <tr><th>Data Sensitivity</th><td>Competitive intelligence and GTM strategy (internal-confidential); no customer PII. SemRush credentials in the Execution Studio secret store, never in prompts or logs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>System Prompt (planning scope &mdash; packaging module is deterministic, no prompt)</h3>
+    <div class="prompt-block">You are the Campaign-in-a-Box Orchestrator for the LevelShift Content to Campaign Phase 1 workflow. From an approved campaign brief you assemble the full campaign foundation in one pass: (1) sourced competitive and market intel &mdash; a claim without a sourced file or live search result behind it is marked unverified and excluded; never smooth over a gap with plausible content, report it; (2) the audience &amp; offer pack &mdash; vertical and Type 3/4 segment applicability with rationale, personas, offer framing, proof points with per-claim provenance, and persona-level messaging angles, remembering that events are the proven channel for Type 3/4 accounts; (3) the asset checklist &mdash; an explicit reuse / adapt / create decision per required asset grounded in an actual OneDrive repository search, never marking "create" without searching first; (4) content outlines seeded from the confirmed messaging angles; and (5) the back-planned calendar, workflow plan and standardized campaign workspace, honoring the 2-researched-blogs-per-month capacity rule and every human review gate. Keep Business Central and F&amp;O strictly independent, treat Copilot as D365-cloud-only, write "ShiftAI" as one word, avoid banned terms, and use a positive tone with no urgency or fear framing and no overselling. Everything you produce is a proposal until the Marketing Lead confirms it; if a timeline is infeasible, say so with trade-off options instead of silently compressing review gates. You never publish, send or approve anything.</div>
+  </div>
+</div>
+<!-- ============================= AGENT 3 ============================= -->
+<div class="agent-spec">
+  <div class="agent-spec-header">
+    <div class="agent-number">3</div>
+    <div class="agent-header-text">
+      <div class="agent-title-row"><h2>Content Repurposing Agent</h2><span class="type-tag type-ai">AI Agent</span></div>
+      <p class="agent-purpose">The TO-BE design's Content Repurposing Agent (Section 4.2, Content Distribution &amp; Repurposing Engine) &mdash; the production engine of Phase 1 and its highest-value build. It implements the create-once model: one flagship asset per campaign topic is drafted first from the approved outline and audience &amp; offer pack, refined by Content Writers, and confirmed; the agent then "reads that asset and pulls out the reusable claims, quotes, data points and structure it needs to generate each derivative &mdash; it does not simply copy-paste excerpts." Up to eight channel-native derivatives per the source-to-derivative map: LinkedIn company post (feed-native hook, campaign hashtag), LinkedIn executive post (first-person POV, deliberately less corporate), email nurture snippet (hook + CTA sized for one touchpoint), sales battle card extract (objection-ready for ISR/Sales), executive one-pager, FAQ extract (direct Q&amp;A formatted for AI-answer extraction, naming LevelShift), community post draft (authentic, non-promotional voice), and service-page update brief. Sourced claims only, within configured volume limits.</p>
+    </div>
+  </div>
+
+  <table class="kv-table at-a-glance">
+    <tbody>
+      <tr><th>Model / Runtime</th><td>Claude Opus 5 (<code>claude-opus-5</code>) via Anthropic API &mdash; adaptive thinking, effort <code>high</code>, streaming</td><th>SLA Target</th><td>Flagship draft p95 &lt; 15 min; full derivative fan-out p95 &lt; 20 min</td></tr>
+      <tr><th>Max Tokens</th><td>32,000 (flagship, streaming); 8,000 per derivative</td><th>Invocation</th><td>Flagship: on outline approval. Fan-out: on flagship content-confirmed signal from the Content Collaboration &amp; Iteration Agent</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section">
+    <h3>Implementation Tasks</h3>
+    <table class="data-table">
+      <thead><tr><th class="col-num">Step</th><th>Task</th></tr></thead>
+      <tbody>
+        <tr><td class="col-num">1</td><td>Load the approved outline, audience &amp; offer pack and intel summary; validate that every planned claim in the outline maps to a sourced proof point; refuse to draft sections whose claims are unverified (emit a gap note instead).</td></tr>
+        <tr><td class="col-num">2</td><td>Draft the flagship asset from the outline: research-grade long-form content in LevelShift voice and per the LevelShift Brand Guidelines document &mdash; concise, positive, no overselling, no banned terms, "ShiftAI" one word, BC/F&amp;O never combined, Copilot always D365-cloud-only.</td></tr>
+        <tr><td class="col-num">3</td><td>Embed inline source markers (claim &rarr; source URI) as document comments/metadata so the Quality Gate and human reviewers can verify provenance without re-research.</td></tr>
+        <tr><td class="col-num">4</td><td>Write the flagship into the campaign workspace as a versioned Word document and hand it to the Content Collaboration &amp; Iteration Agent for the human review cycle; do not start the fan-out yet.</td></tr>
+        <tr><td class="col-num">5</td><td>On flagship content-confirmed: parse the final flagship and extract its claim inventory &mdash; reusable claims, quotes, data points, and structural elements &mdash; as the single source for all derivatives.</td></tr>
+        <tr><td class="col-num">6</td><td>Generate each planned derivative from the claim inventory per its channel recipe: feed-native hook + campaign hashtag (LinkedIn company), first-person executive POV (LinkedIn exec), hook + CTA snippet (email), objection-ready summary (battle card), condensed leave-behind (one-pager), direct Q&amp;A formatted for answer-engine extraction with LevelShift named explicitly (FAQ), authentic community voice with no promotional framing (community draft), and a discrete section brief for the existing service page.</td></tr>
+        <tr><td class="col-num">7</td><td>Respect configured volume limits per derivative type (fan-out tuning is config, not judgment &mdash; an earlier draft of this idea over-produced and was scaled back on review) and generate only derivatives on the approved asset checklist.</td></tr>
+        <tr><td class="col-num">8</td><td>Run a generation-time self-check per asset against the rules pack (terminology, tone, BC/F&amp;O, Copilot, sourcing) before staging &mdash; the Quality Gate remains the authority, but self-checking keeps its failure rate low.</td></tr>
+        <tr><td class="col-num">9</td><td>Stage all drafts in the workspace with correct naming/versioning, register them in the Context Store with claim-inventory lineage (which claims each derivative uses), and notify the Content Collaboration &amp; Iteration Agent.</td></tr>
+        <tr><td class="col-num">10</td><td>On revision requests routed back from iteration or the Quality Gate, regenerate only the affected asset/section, preserving approved content and updating lineage.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Connections</h3>
+    <table class="data-table">
+      <thead><tr><th>Direction</th><th>Connected Node</th><th>Condition / Signal</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Campaign-in-a-Box Orchestrator</td><td>outlines + audience pack + create/adapt list</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Content Collaboration &amp; Iteration Agent</td><td>flagship confirmed / structural rework requests</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Quality Gate &amp; Approval Agent</td><td>rule-failure rework requests</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Content Collaboration &amp; Iteration Agent</td><td>staged drafts</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign Context Store</td><td>store context + claim lineage</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Inputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>content_outlines</code></td><td><span class="type-tag">object</span></td><td>Approved skeleton per asset with planned claims.</td><td>Campaign-in-a-Box Orchestrator</td></tr>
+          <tr><td><code>audience_offer_pack</code></td><td><span class="type-tag">object</span></td><td>Personas, messaging angles and sourced proof points.</td><td>Campaign-in-a-Box Orchestrator</td></tr>
+          <tr><td><code>flagship_final</code></td><td><span class="type-tag">object</span></td><td>Content-confirmed flagship used as the fan-out source.</td><td>Content Collaboration &amp; Iteration Agent</td></tr>
+          <tr><td><code>rework_request</code></td><td><span class="type-tag">object</span></td><td>Targeted revision instructions with rule codes or reviewer feedback.</td><td>Iteration Agent / Quality Gate</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h3>Outputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Destination</th></tr></thead>
+        <tbody>
+          <tr><td><code>flagship_draft</code></td><td><span class="type-tag">object</span></td><td>Long-form flagship asset with inline claim&rarr;source markers, versioned in the workspace.</td><td>Content Collaboration &amp; Iteration Agent</td></tr>
+          <tr><td><code>derivative_set</code></td><td><span class="type-tag">object</span></td><td>Channel-native derivatives per the source-to-derivative map, each with claim lineage.</td><td>Content Collaboration &amp; Iteration Agent</td></tr>
+          <tr><td><code>claim_inventory</code></td><td><span class="type-tag">object</span></td><td>Extracted reusable claims/quotes/data points from the confirmed flagship.</td><td>Campaign Context Store</td></tr>
+          <tr><td><code>gap_notes</code></td><td><span class="type-tag">object</span></td><td>Sections not drafted because their claims are unverified, with what is needed.</td><td>Iteration Agent / Marketing Lead</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Tech Stack</h3>
+    <table class="data-table">
+      <thead><tr><th>Tool / Platform</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Anthropic API (Claude Opus 5)</td><td>Flagship long-form drafting and channel-native derivative generation &mdash; the quality-critical writing engine</td></tr>
+        <tr><td>Word / OneDrive API</td><td>Versioned draft documents, inline source markers as comments/metadata</td></tr>
+        <tr><td>ShiftAI Execution Studio</td><td>Flagship-first sequencing, fan-out trigger on content-confirmed</td></tr>
+        <tr><td>Campaign Context Store</td><td>Claim inventory, derivative lineage, draft registry</td></tr>
+        <tr><td>Rules pack (versioned config)</td><td>Generation-time self-check: terminology, banned terms, tone, BC/F&amp;O, Copilot, volume limits</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Telemetry &amp; Monitoring</h3>
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Description</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><code>flagship_to_fanout_time</code></td><td>Elapsed time from flagship confirmation to full staged derivative set; the create-once payoff.</td><td>&lt; 1 business day (vs. days-per-asset today)</td></tr>
+        <tr><td><code>compliance_first_pass_rate</code></td><td>Share of drafted assets passing the Quality Gate with zero blocking findings.</td><td>&gt;= 85% by wave 3 exit</td></tr>
+        <tr><td><code>revision_cycles_per_asset</code></td><td>Average human-feedback iterations before content-confirmed.</td><td>&lt;= 2</td></tr>
+        <tr><td><code>claim_lineage_coverage</code></td><td>Derivative claims traceable to the flagship claim inventory or the sourced proof points.</td><td>100%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Logging</h3>
+      <div class="bullet-box"><ul>
+        <li><strong>[V2 standard envelope]</strong> <code>trace_id / run_id / span_id</code>, <code>tokens_in / tokens_out / cost_usd</code>, latency breakdown (<code>llm_ms / api_ms / queue_ms</code>), model + prompt + rules-pack versions; handoff events per taxonomy C with labeled human overrides</li>
+        <li><code>campaign_id</code>, <code>asset_id</code>, asset type, draft version per generation</li>
+        <li>Outline/pack versions consumed and claim-inventory version used for each derivative</li>
+        <li>Self-check results per rules-pack rule with pass/fail codes</li>
+        <li>Sections skipped for unverified claims, with gap-note IDs</li>
+        <li>Token usage and generation latency per asset (cost telemetry)</li>
+      </ul></div>
+    </div>
+    <div class="section">
+      <h3>Alerting</h3>
+      <div class="bullet-box"><ul>
+        <li>Compliance first-pass rate &lt; 70% over a rolling week (rules drift or prompt regression)</li>
+        <li>Any generated asset containing an unsourced competitor/ROI claim (must be zero &mdash; page AiCoE)</li>
+        <li>Fan-out attempted before flagship confirmation (sequencing violation)</li>
+        <li>Anthropic API error rate &gt; 5% over 15 minutes or repeated max-token truncations</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Error Handling &amp; Resilience</h3>
+    <table class="kv-table">
+      <tbody>
+        <tr><th>Retry Policy</th><td>3 retries with exponential backoff from 2s; regenerate-on-truncation with raised token ceiling once</td></tr>
+        <tr><th>Timeout</th><td>20 minutes flagship; 5 minutes per derivative; 45 minutes full fan-out run</td></tr>
+        <tr><th>Escalation</th><td>Escalate to Content Writers / Marketing Lead when an outline demands claims the pack cannot source, when self-check failures persist after two regeneration attempts, or when the flagship materially outgrows its outline</td></tr>
+        <tr><th>Fallback</th><td>Never stage an asset that failed self-check; stage the passing subset, emit gap notes for the rest. Drafts are additive and versioned &mdash; no destructive overwrites of reviewed content</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Governance, Explainability &amp; Responsibility</h3>
+    <div class="gov-subsection">
+      <h4>Guardrails</h4>
+      <table class="data-table">
+        <thead><tr><th class="col-num">#</th><th>Guardrail</th></tr></thead>
+        <tbody>
+          <tr><td class="col-num">1</td><td>Sourced claims only: every factual claim, statistic, competitor reference or ROI statement traces to the verified proof points or the flagship claim inventory; unverifiable sections become gap notes, never plausible prose.</td></tr>
+          <tr><td class="col-num">2</td><td>Full rules-pack compliance at generation time: "ShiftAI" one word; banned/discouraged terms filtered; BC and F&amp;O never combined; Copilot presented as D365-cloud-only; positive tone, no urgency/fear framing; concise, no overselling.</td></tr>
+          <tr><td class="col-num">3</td><td>Flagship-first sequencing is mandatory: derivatives are generated only from a human-confirmed flagship, never from an unreviewed draft.</td></tr>
+          <tr><td class="col-num">4</td><td>Derivative volumes capped by config (over-production was explicitly rejected in the TO-BE design review).</td></tr>
+          <tr><td class="col-num">5</td><td>This agent writes drafts into the workspace only &mdash; it never publishes, posts, sends, or touches any external channel; FAQ/AEO formatting follows the named-mention rule (LevelShift named explicitly in answer-extractable text).</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Explainability</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Decision Logic</th><td>Every derivative documents which flagship claims it used (lineage), which channel recipe was applied, and its self-check results; every flagship section maps to its outline node and proof points.</td></tr>
+          <tr><th>Audit Trail</th><td>Log campaign_id, asset_id, versions of outline/pack/rules-pack/claim-inventory consumed, self-check outcomes, gap notes, regeneration causes, agent version, and token usage per run.</td></tr>
+          <tr><th>Human Review Triggers</th><td>All output goes to human review by design (Iteration &rarr; Quality Gate &rarr; Grammar Reviewer &rarr; BU Lead). Additional early triggers: unverifiable-claim gap notes, persistent self-check failures, outline-content divergence.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Responsibility &amp; Ownership</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Owner</th><td>ShiftAI AiCoE (build/operate) &middot; Content Writers + Marketing Lead (editorial authority)</td></tr>
+          <tr><th>Autonomy Level</th><td>May autonomously draft, self-check, stage and regenerate; may not confirm content, bypass the flagship-first sequence, exceed volume limits, or publish anywhere</td></tr>
+          <tr><th>Data Sensitivity</th><td>Pre-release marketing content and competitive positioning (internal-confidential until published); no customer PII</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>System Prompt</h3>
+    <div class="prompt-block">You are the Content Repurposing Agent for the LevelShift Content to Campaign Phase 1 workflow. You write the flagship asset first, from the approved outline and audience &amp; offer pack, in LevelShift voice: concise, positive and aspirational, no urgency or fear framing, no overselling, "ShiftAI" always one word, banned terms avoided, Business Central and F&amp;O never combined, Copilot always D365-cloud-only. Every factual claim, statistic, competitor reference or ROI statement must trace to a verified proof point or the confirmed flagship's claim inventory &mdash; if a claim cannot be sourced, leave a gap note instead of writing plausible content. Only after the flagship is human-confirmed do you fan out channel-native derivatives per the source-to-derivative map, extracting reusable claims, quotes, data points and structure rather than copy-pasting excerpts, staying within configured volume limits, and recording claim lineage per derivative. For the FAQ/AEO derivative, structure direct Q&amp;A that names LevelShift explicitly in answer-extractable text. You stage drafts in the campaign workspace for human review; you never publish, post or send anything, anywhere.</div>
+  </div>
+</div>
+
+<!-- ============================= AGENT 4 ============================= -->
+<div class="agent-spec">
+  <div class="agent-spec-header">
+    <div class="agent-number">4</div>
+    <div class="agent-header-text">
+      <div class="agent-title-row"><h2>Content Collaboration &amp; Iteration Agent</h2><span class="type-tag type-ai">AI Agent</span></div>
+      <p class="agent-purpose">Runs the human-in-the-loop collaboration cycle between drafts and content-complete &mdash; the "Content Collaboration &amp; Iteration" sub-step of Content Production &amp; Assembly. It stages drafts for the right reviewers, consolidates feedback left as Word comments and tracker notes into a single de-duplicated, de-conflicted revision instruction set, applies agreed textual revisions (or routes structural rework back to the Content Repurposing Agent), maintains a clean version history per asset, and tracks each asset's iteration state on the status tracker. It exists because collaboration is the least visible part of today's production: feedback arrives fragmented, versions proliferate, and nobody can say which asset is one round from done. The agent makes iteration a managed, measured cycle while keeping every editorial decision human &mdash; consistent with the TO-BE principle that marketing reviews all flags and nothing is edited or removed automatically.</p>
+    </div>
+  </div>
+
+  <table class="kv-table at-a-glance">
+    <tbody>
+      <tr><th>Model / Runtime</th><td>Claude Sonnet 5 (<code>claude-sonnet-5</code>) via Anthropic API &mdash; adaptive thinking, effort <code>medium</code></td><th>SLA Target</th><td>p95 &lt; 5 minutes from feedback-complete signal to applied revision or routed rework</td></tr>
+      <tr><th>Max Tokens</th><td>16,000</td><th>Invocation</th><td>Event-driven: new staged draft, reviewer feedback-complete signal, comment-thread resolution; scheduled sweep every 4 business hours for stale assets</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section">
+    <h3>Implementation Tasks</h3>
+    <table class="data-table">
+      <thead><tr><th class="col-num">Step</th><th>Task</th></tr></thead>
+      <tbody>
+        <tr><td class="col-num">1</td><td>On draft staged: assign reviewers from the workflow plan (Content Writers for editorial, Marketing Lead for message fit), set review-due dates on the status tracker, and notify reviewers with direct document links.</td></tr>
+        <tr><td class="col-num">2</td><td>Collect feedback when a reviewer signals done (or at due date): read all unresolved Word comments and tracker notes for the asset and normalize each item into <code>{location, instruction, reviewer, type}</code>.</td></tr>
+        <tr><td class="col-num">3</td><td>De-duplicate and de-conflict the feedback set; where two reviewers contradict each other, do not pick a side &mdash; surface the conflict to the Marketing Lead with both positions quoted and hold the affected section.</td></tr>
+        <tr><td class="col-num">4</td><td>Classify each item: textual edit (apply directly), structural rework (route to the Content Repurposing Agent with the consolidated instruction), or out-of-scope suggestion (log for the retrospective backlog, sub-process 5, without acting).</td></tr>
+        <tr><td class="col-num">5</td><td>Apply textual edits as tracked changes / a new version &mdash; never destructive overwrites &mdash; preserving claim&rarr;source markers; if an edit would delete a source marker or change a sourced claim's meaning, flag instead of applying.</td></tr>
+        <tr><td class="col-num">6</td><td>Post an edit summary per revision round: what changed, which feedback items were applied / deferred / conflicted, so reviewers verify at a glance instead of re-reading the whole asset.</td></tr>
+        <tr><td class="col-num">7</td><td>Maintain version history and status per asset on the tracker: <code>in_review</code> &rarr; <code>in_revision</code> &rarr; <code>content_confirmed</code>, with iteration count; enforce that <code>content_confirmed</code> is set only by a human reviewer action.</td></tr>
+        <tr><td class="col-num">8</td><td>On flagship <code>content_confirmed</code>: signal the Content Repurposing Agent to begin derivative fan-out; on derivative confirmations: signal the Campaign-in-a-Box Orchestrator's packaging module as each asset completes.</td></tr>
+        <tr><td class="col-num">9</td><td>Sweep for stale assets (no reviewer activity past due date), send graduated reminders, and escalate persistent stalls to the Marketing Lead with the blocking reviewer and age.</td></tr>
+        <tr><td class="col-num">10</td><td>Persist per-asset iteration metrics (rounds, feedback volume, time-in-review) to the Campaign Context Store &mdash; the raw material for sub-process 5's improvement loop later.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Connections</h3>
+    <table class="data-table">
+      <thead><tr><th>Direction</th><th>Connected Node</th><th>Condition / Signal</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Content Repurposing Agent</td><td>staged drafts</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Content Writers / Marketing Lead</td><td>Word comments, confirmations, conflict resolutions</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Campaign-in-a-Box Orchestrator</td><td>workflow plan (reviewers, due dates)</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Quality Gate &amp; Approval Agent</td><td>failed assets + findings (rework cycle)</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Content Repurposing Agent</td><td>structural rework / flagship confirmed</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign-in-a-Box Orchestrator (packaging)</td><td>content-confirmed assets</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign Context Store</td><td>iteration metrics + status</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Inputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>staged_draft</code></td><td><span class="type-tag">object</span></td><td>New or regenerated draft with version and lineage metadata.</td><td>Content Repurposing Agent</td></tr>
+          <tr><td><code>reviewer_feedback</code></td><td><span class="type-tag">object</span></td><td>Word comments and tracker notes per asset.</td><td>Word API</td></tr>
+          <tr><td><code>workflow_plan</code></td><td><span class="type-tag">object</span></td><td>Reviewer assignments and due dates per asset.</td><td>Campaign-in-a-Box Orchestrator</td></tr>
+          <tr><td><code>gate_findings</code></td><td><span class="type-tag">object</span></td><td>Quality Gate failure reports routed into the rework cycle.</td><td>Quality Gate &amp; Approval Agent</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h3>Outputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Destination</th></tr></thead>
+        <tbody>
+          <tr><td><code>revised_draft</code></td><td><span class="type-tag">object</span></td><td>New asset version with applied edits and an edit summary.</td><td>Campaign workspace / reviewers</td></tr>
+          <tr><td><code>rework_request</code></td><td><span class="type-tag">object</span></td><td>Consolidated structural-change instruction for regeneration.</td><td>Content Repurposing Agent</td></tr>
+          <tr><td><code>confirmed_asset</code></td><td><span class="type-tag">object</span></td><td>Asset marked content-confirmed by a human, with final version ID.</td><td>Campaign-in-a-Box Orchestrator (packaging)</td></tr>
+          <tr><td><code>iteration_metrics</code></td><td><span class="type-tag">object</span></td><td>Rounds, feedback volume, time-in-review per asset.</td><td>Campaign Context Store</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Tech Stack</h3>
+    <table class="data-table">
+      <thead><tr><th>Tool / Platform</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Anthropic API (Claude Sonnet 5)</td><td>Feedback normalization, conflict detection, edit application, summaries</td></tr>
+        <tr><td>Word API</td><td>Comment reading/resolution, tracked-change revisions, version handling</td></tr>
+        <tr><td>Excel API</td><td>Status tracker updates (state, iteration count, due dates)</td></tr>
+        <tr><td>ShiftAI Execution Studio</td><td>Event triggers, reviewer notifications, escalation tasks</td></tr>
+        <tr><td>Campaign Context Store</td><td>Asset states, iteration metrics, confirmation records</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Telemetry &amp; Monitoring</h3>
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Description</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><code>iteration_rounds_avg</code></td><td>Average review rounds to content-confirmed, per asset class.</td><td>&lt;= 2</td></tr>
+        <tr><td><code>time_in_review_p95</code></td><td>Staged to content-confirmed elapsed time.</td><td>&lt; 3 business days flagship; &lt; 2 for derivatives</td></tr>
+        <tr><td><code>feedback_application_accuracy</code></td><td>Applied edits accepted by reviewers without re-correction.</td><td>&gt;= 95%</td></tr>
+        <tr><td><code>stale_asset_count</code></td><td>Assets past review due date with no activity.</td><td>0 sustained &gt; 2 business days</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Logging</h3>
+      <div class="bullet-box"><ul>
+        <li><strong>[V2 standard envelope]</strong> <code>trace_id / run_id / span_id</code>, <code>tokens_in / tokens_out / cost_usd</code>, latency breakdown (<code>llm_ms / api_ms / queue_ms</code>), model + prompt + rules-pack versions; handoff events per taxonomy C with labeled human overrides</li>
+        <li><code>campaign_id</code>, <code>asset_id</code>, version chain and state transitions with timestamps</li>
+        <li>Feedback items collected per round with reviewer attribution and classification</li>
+        <li>Conflicts surfaced and their human resolutions</li>
+        <li>Edits applied vs. flagged (source-marker protection events)</li>
+        <li>Reminders and escalations sent, with recipients</li>
+      </ul></div>
+    </div>
+    <div class="section">
+      <h3>Alerting</h3>
+      <div class="bullet-box"><ul>
+        <li>Asset stalled past due date after two reminders (escalate to Marketing Lead)</li>
+        <li>Iteration rounds &gt; 3 on any asset (signals outline or brief problem, not editing)</li>
+        <li>Edit application error or version-history corruption (halt asset, page AiCoE)</li>
+        <li>Any <code>content_confirmed</code> transition without a human actor identity (must be zero)</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Error Handling &amp; Resilience</h3>
+    <table class="kv-table">
+      <tbody>
+        <tr><th>Retry Policy</th><td>3 retries, exponential backoff from 2s, for Word/Excel/Anthropic transient failures</td></tr>
+        <tr><th>Timeout</th><td>10 minutes per revision-application run</td></tr>
+        <tr><th>Escalation</th><td>Escalate to Marketing Lead for feedback conflicts, repeated stalls, or any edit that would alter a sourced claim's meaning</td></tr>
+        <tr><th>Fallback</th><td>If edit application fails mid-round, revert to the prior version (versions are immutable snapshots) and re-queue; feedback items are never silently dropped &mdash; every item ends as applied, deferred, conflicted or rejected-by-human</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Governance, Explainability &amp; Responsibility</h3>
+    <div class="gov-subsection">
+      <h4>Guardrails</h4>
+      <table class="data-table">
+        <thead><tr><th class="col-num">#</th><th>Guardrail</th></tr></thead>
+        <tbody>
+          <tr><td class="col-num">1</td><td><code>content_confirmed</code> is a human-only action; the agent can propose readiness but never sets the state itself.</td></tr>
+          <tr><td class="col-num">2</td><td>Conflicting reviewer feedback is surfaced, never adjudicated by the agent.</td></tr>
+          <tr><td class="col-num">3</td><td>Edits never remove or weaken claim&rarr;source markers; changes to sourced claims route to humans.</td></tr>
+          <tr><td class="col-num">4</td><td>All revisions are additive versions with tracked changes; destructive overwrites are impossible by construction.</td></tr>
+          <tr><td class="col-num">5</td><td>Nothing is edited or removed automatically on flags &mdash; consistent with the TO-BE principle that marketing reviews all flags.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Explainability</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Decision Logic</th><td>Every applied edit maps to a specific feedback item and reviewer; every classification (textual/structural/out-of-scope) carries a rationale; edit summaries make each round's changes reviewable in one place.</td></tr>
+          <tr><th>Audit Trail</th><td>Log campaign_id, asset_id, version chain, feedback items with attribution, classifications, applications, conflicts and resolutions, state transitions with actor identity, agent version.</td></tr>
+          <tr><th>Human Review Triggers</th><td>Feedback conflicts; sourced-claim edits; &gt;3 iteration rounds; any stall escalation.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Responsibility &amp; Ownership</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Owner</th><td>ShiftAI AiCoE (build/operate) &middot; Marketing Lead (review workflow rules)</td></tr>
+          <tr><th>Autonomy Level</th><td>May autonomously stage, notify, consolidate, apply textual edits and track; may not confirm content, resolve conflicts, or alter sourced claims</td></tr>
+          <tr><th>Data Sensitivity</th><td>Pre-release content and internal reviewer commentary; treat comments as internal-only and never quote them outside the workspace</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>System Prompt</h3>
+    <div class="prompt-block">You are the Content Collaboration &amp; Iteration Agent for the LevelShift Content to Campaign Phase 1 workflow. You manage the review cycle between staged drafts and content-confirmed: assign reviewers from the workflow plan, consolidate Word comments and tracker notes into a de-duplicated instruction set, and classify each item as a textual edit, structural rework, or out-of-scope suggestion. Apply textual edits as tracked, versioned changes with a per-round edit summary; route structural rework to the Content Repurposing Agent as one consolidated instruction; log out-of-scope ideas for the retrospective backlog without acting on them. Never adjudicate conflicting feedback &mdash; surface both positions to the Marketing Lead and hold the section. Never remove or weaken a claim-to-source marker, and route any edit that changes a sourced claim's meaning to a human. content_confirmed is set only by a human reviewer; your job is to make that moment arrive faster and with full traceability, not to make the call yourself.</div>
+  </div>
+</div>
+<!-- ============================= AGENT 5 ============================= -->
+<div class="agent-spec">
+  <div class="agent-spec-header">
+    <div class="agent-number">5</div>
+    <div class="agent-header-text">
+      <div class="agent-title-row"><h2>Quality Gate &amp; Approval Agent</h2><span class="type-tag type-hybrid">Hybrid &mdash; rules engine + AI + deterministic routing</span></div>
+      <p class="agent-purpose">The TO-BE design's Quality Gate agent &mdash; "enforces terminology, BC/F&amp;O separation, and Copilot rules automatically before content reaches the Grammar/Quality Reviewer" &mdash; extended to carry the whole of sub-process 3. Its <strong>gate</strong> combines a deterministic rules pass for mechanically checkable rules ("ShiftAI" one word; the banned/discouraged terms list; naming; AEO named-mention formatting) with Claude-based contextual checks for meaning-level rules (BC/F&amp;O independence in substance; Copilot claims implying AX capability; unsourced competitor/ROI claims; urgency- or fear-based framing; brand-voice fit). It produces a per-asset compliance report with pass/fail per rule and exact locations &mdash; it flags and blocks, never edits. Its deterministic <strong>routing module</strong> then risk-classifies each passing asset (public vs internal &mdash; the TO-BE's risk-scaled review depth), routes it through the retained human gates in sequence (Grammar/Quality Reviewer final language QA on market-facing content, then BU Campaign Lead package sign-off, with CMO visibility on strategy items), tracks SLAs with reminders and escalations, records every approval with identity and timestamp, locks approved versions read-only, and releases the approved Campaign-in-a-Box as Phase 1's terminal output.</p>
+    </div>
+  </div>
+
+  <table class="kv-table at-a-glance">
+    <tbody>
+      <tr><th>Model / Runtime</th><td>Deterministic rules engine + Claude Sonnet 5 (<code>claude-sonnet-5</code>, adaptive thinking, effort <code>high</code>) for contextual checks; Execution Studio workflow engine for the routing module (no LLM)</td><th>SLA Target</th><td>Gate p95 &lt; 3 min per asset, &lt; 15 min per package; routing actions &lt; 30 seconds; approval cycle measured against a 5-business-day package SLA</td></tr>
+      <tr><th>Max Tokens</th><td>8,000 per asset report (contextual pass)</td><th>Invocation</th><td>Gate: on package manifest hand-off; per-asset re-check on rework re-entry (hash change). Routing: on gate-pass; timer-driven reminder/escalation sweeps</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section">
+    <h3>Implementation Tasks</h3>
+    <table class="data-table">
+      <thead><tr><th class="col-num">Step</th><th>Task</th></tr></thead>
+      <tbody>
+        <tr><td class="col-num">1</td><td>Load the package manifest, resolve each asset's final version by content hash (reject on mismatch), and load the versioned rules pack and brand guidelines document.</td></tr>
+        <tr><td class="col-num">2</td><td>Run the deterministic pass per asset: "ShiftAI" one-word check; banned/discouraged term scan ("unlock", vague "transform", "accelerate", "empower", "leverage", "seamless", "transformation" &mdash; allowing "AI transformation" as a category noun); naming-convention and metadata checks; AEO named-mention presence for FAQ/service-page assets.</td></tr>
+        <tr><td class="col-num">3</td><td>Run the contextual pass per asset with Claude: BC/F&amp;O independence in meaning (a BC asset referencing F&amp;O migration paths fails even without the literal pair); Copilot statements implying non-D365-cloud capability (incl. AX); tone violations (urgency, fear, hype, overselling); brand-voice divergence from the guidelines.</td></tr>
+        <tr><td class="col-num">4</td><td>Verify claim sourcing: every competitor reference, statistic and ROI statement must carry a claim&rarr;source marker resolving to the campaign's verified proof points or claim inventory; unmarked factual claims fail with <code>unsourced_claim</code>.</td></tr>
+        <tr><td class="col-num">5</td><td>Merge both passes into the per-asset compliance report &mdash; rule ID, severity (blocking / advisory), exact location, quoted finding, remediation direction (description only, no rewritten text) &mdash; and set the verdict: <code>pass</code> (zero blocking findings) or <code>fail</code>. Fail-closed: an asset whose checks cannot complete never advances.</td></tr>
+        <tr><td class="col-num">6</td><td>Return failed assets to the Content Collaboration &amp; Iteration Agent with findings; forward passing assets and their reports to the routing module.</td></tr>
+        <tr><td class="col-num">7</td><td>[Routing module] Classify each gate-passed asset by distribution class from the versioned routing policy &mdash; <code>public</code> (blog, LinkedIn posts, FAQ/service-page, community draft, external one-pager) or <code>internal</code> (battle card, call scripts, enablement notes) &mdash; a policy lookup, not inference.</td></tr>
+        <tr><td class="col-num">8</td><td>[Routing module] Build the review sequence per policy (public: full Grammar QA &rarr; BU Lead; internal: lighter Grammar pass &rarr; BU Lead; strategy-flagged items add VP Marketing/CMO visibility) and create review tasks with direct links to the asset, its compliance report and its claim lineage; enforce sequence integrity &mdash; no gate can be skipped or reordered; urgency shortens SLAs, not the gate list.</td></tr>
+        <tr><td class="col-num">9</td><td>[Routing module] Track review state; send reminders at 50% and 90% of each review SLA; escalate overdue reviews to the Marketing Lead and package-level slips to the BU Campaign Lead; record every outcome (approve / return-with-findings, returns routed to packaging re-open with reviewer notes verbatim).</td></tr>
+        <tr><td class="col-num">10</td><td>[Routing module] On full-package approval: record the approval chain (identity, role, timestamp, asset version, hash per approval), lock approved versions read-only in OneDrive, stamp the package <code>approved</code>, publish cycle metrics, and hand the locked package reference to Launch &amp; Publishing (Phase 2) &mdash; nothing is published by this agent.</td></tr>
+        <tr><td class="col-num">11</td><td>Calibrate continuously: log reviewer overrides of gate findings (false positives) and reviewer-caught violations the gate missed (false negatives) as labeled examples for rules-pack tuning; persist reports, verdicts and the calibration log to the Context Store.</td></tr>
+        <tr><td class="col-num">12</td><td>Re-check on every rework re-entry: a previously passing asset re-enters the gate if its hash changes, with a delta-focused re-check; any post-lock modification attempt invalidates the package and re-enters at packaging.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Connections</h3>
+    <table class="data-table">
+      <thead><tr><th>Direction</th><th>Connected Node</th><th>Condition / Signal</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Campaign-in-a-Box Orchestrator (packaging)</td><td>package manifest</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Rules pack + brand guidelines + routing policy (versioned config)</td><td>reads</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>Grammar/Quality Reviewer</td><td>language QA outcomes; calibration overrides</td></tr>
+        <tr><td><span class="dir-badge dir-in">Receives from</span></td><td>BU Campaign Lead / VP Marketing</td><td>sign-off decisions</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Content Collaboration &amp; Iteration Agent</td><td>failed assets + findings</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign-in-a-Box Orchestrator (packaging)</td><td>rework re-open on returns</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Launch &amp; Publishing (Phase 2)</td><td>approved locked package (hand-off only)</td></tr>
+        <tr><td><span class="dir-badge dir-out">Sends to</span></td><td>Campaign Context Store</td><td>reports + approval chain + calibration log</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Inputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>package_manifest</code></td><td><span class="type-tag">object</span></td><td>Assets to check with file IDs, versions and hashes.</td><td>Campaign-in-a-Box Orchestrator</td></tr>
+          <tr><td><code>rules_pack</code></td><td><span class="type-tag">object</span></td><td>Versioned machine-readable rules: terminology, banned terms, BC/F&amp;O, Copilot, tone, sourcing, AEO named-mention.</td><td>Config store</td></tr>
+          <tr><td><code>brand_guidelines</code></td><td><span class="type-tag">object</span></td><td>Brand guidelines document for voice-fit checks.</td><td>OneDrive</td></tr>
+          <tr><td><code>routing_policy</code></td><td><span class="type-tag">object</span></td><td>Risk classes, review sequences, SLAs, escalation paths.</td><td>Config store</td></tr>
+          <tr><td><code>review_outcomes</code></td><td><span class="type-tag">object</span></td><td>Approve / return decisions with reviewer notes; calibration overrides.</td><td>Human reviewers</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h3>Outputs</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Destination</th></tr></thead>
+        <tbody>
+          <tr><td><code>compliance_report</code></td><td><span class="type-tag">object</span></td><td>Per-asset findings: rule ID, severity, location, quote, remediation direction, verdict.</td><td>Iteration Agent / reviewers</td></tr>
+          <tr><td><code>review_tasks</code></td><td><span class="type-tag">object</span></td><td>Sequenced review assignments with links, reports and due dates.</td><td>Reviewers (tasks/email)</td></tr>
+          <tr><td><code>approval_chain</code></td><td><span class="type-tag">object</span></td><td>Complete identity/timestamp/version/hash record of every approval.</td><td>Campaign Context Store</td></tr>
+          <tr><td><code>approved_package</code></td><td><span class="type-tag">object</span></td><td>Locked, fully-approved Campaign-in-a-Box reference &mdash; Phase 1 terminal output.</td><td>Phase 2 Launch &amp; Publishing (hand-off)</td></tr>
+          <tr><td><code>calibration_log</code></td><td><span class="type-tag">object</span></td><td>False-positive/false-negative labeled examples for rules tuning.</td><td>Context Store / AiCoE</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Tech Stack</h3>
+    <table class="data-table">
+      <thead><tr><th>Tool / Platform</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Rules engine (Execution Studio)</td><td>Deterministic terminology/banned-term/format checks &mdash; exact, reproducible, cheap</td></tr>
+        <tr><td>Anthropic API (Claude Sonnet 5)</td><td>Contextual checks: semantic BC/F&amp;O independence, Copilot implications, tone, sourcing, brand voice</td></tr>
+        <tr><td>Execution Studio workflow engine</td><td>Routing state machine, timers, reminders, escalations, approval recording</td></tr>
+        <tr><td>Word / OneDrive API</td><td>Asset content reads, location-anchored findings, read-only locking of approved versions</td></tr>
+        <tr><td>Campaign Context Store</td><td>Reports, verdicts, approval chains, package states, calibration data</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Telemetry &amp; Monitoring</h3>
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Description</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><code>gate_precision</code></td><td>Share of blocking findings upheld by human reviewers (1 &minus; false-positive rate).</td><td>&gt;= 90%</td></tr>
+        <tr><td><code>gate_recall_proxy</code></td><td>Rule violations caught by the gate vs. caught later by the Grammar/Quality Reviewer.</td><td>&gt;= 95% caught at gate</td></tr>
+        <tr><td><code>first_pass_approval_rate</code></td><td>Assets approved by humans without a return, downstream of the gate.</td><td>&gt;= 85% by wave 3 exit</td></tr>
+        <tr><td><code>approval_cycle_time_p95</code></td><td>Gate-passed to package-approved elapsed time.</td><td>&lt; 5 business days per package</td></tr>
+        <tr><td><code>sequence_integrity_violations</code></td><td>Attempts to skip or reorder gates (structurally impossible).</td><td>0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spec-grid">
+    <div class="section">
+      <h3>Logging</h3>
+      <div class="bullet-box"><ul>
+        <li><strong>[V2 standard envelope]</strong> <code>trace_id / run_id / span_id</code>, <code>tokens_in / tokens_out / cost_usd</code>, latency breakdown (<code>llm_ms / api_ms / queue_ms</code>), model + prompt + rules-pack versions; handoff events per taxonomy C with labeled human overrides</li>
+        <li><code>campaign_id</code>, <code>asset_id</code>, asset hash, rules-pack + routing-policy versions per check/route</li>
+        <li>Every finding with rule ID, severity, location and quoted text; deterministic vs. contextual pass attribution</li>
+        <li>Verdicts and routes taken (advance / return); review tasks, reminders and escalations with recipients</li>
+        <li>Every review outcome with identity, role, decision and notes reference; version locks with file IDs and hashes</li>
+        <li>Package state transitions through to <code>approved</code> and hand-off; calibration events (overrides, misses)</li>
+      </ul></div>
+    </div>
+    <div class="section">
+      <h3>Alerting</h3>
+      <div class="bullet-box"><ul>
+        <li>Gate precision &lt; 80% over a rolling week (over-flagging erodes trust &mdash; retune)</li>
+        <li>Any reviewer-caught violation in a gate-passed asset (false negative &mdash; immediate rules review)</li>
+        <li>Any approval recorded without a resolvable reviewer identity, or a post-lock modification attempt (halt package)</li>
+        <li>Review overdue past SLA after both reminders; reviewer queue depth &gt; 10 (capacity risk)</li>
+        <li>Rules pack / brand guidelines / routing policy unreadable or version mismatch</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Error Handling &amp; Resilience</h3>
+    <table class="kv-table">
+      <tbody>
+        <tr><th>Retry Policy</th><td>3 retries, exponential backoff from 2s; contextual-pass retries run on the same rules-pack version for reproducibility</td></tr>
+        <tr><th>Timeout</th><td>5 minutes per asset check; 30 minutes per package; 2 minutes per routing action (review waits are SLA-timed, not timeouts)</td></tr>
+        <tr><th>Escalation</th><td>Disputed findings decided by the Marketing Lead (twice-disputed &rarr; rules-pack review); overdue reviews &rarr; Marketing Lead; package slips &rarr; BU Campaign Lead; identity/lock failures and precision/recall alarms &rarr; AiCoE immediately</td></tr>
+        <tr><th>Fallback</th><td>Fail-closed everywhere: an asset whose checks cannot complete is treated as failed, never waved through; deterministic-pass results stand even if the contextual pass errors (partial report, still blocking); a package never releases with an incomplete approval chain; locking failures block release until resolved</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>Governance, Explainability &amp; Responsibility</h3>
+    <div class="gov-subsection">
+      <h4>Guardrails</h4>
+      <table class="data-table">
+        <thead><tr><th class="col-num">#</th><th>Guardrail</th></tr></thead>
+        <tbody>
+          <tr><td class="col-num">1</td><td>The gate flags and blocks; it never edits, rewrites, or auto-fixes content &mdash; remediation stays with the Content Repurposing Agent and humans. Blocking severity is reserved for documented governance rules; style preferences are advisory only.</td></tr>
+          <tr><td class="col-num">2</td><td>Every human gate that exists today is preserved and structurally enforced: the Grammar/Quality Reviewer remains the final language gate on market-facing content; the BU Campaign Lead signs off the package. The agent routes and records &mdash; it never approves.</td></tr>
+          <tr><td class="col-num">3</td><td>Sequence integrity is structural: gates cannot be skipped or reordered by any caller, for any urgency level; review depth scales with risk class per policy, but a gate exists for every asset class.</td></tr>
+          <tr><td class="col-num">4</td><td>All rules live in the versioned rules pack and routing policy owned by Marketing; the agent adds no rules of its own, and every verdict and route cites the config IDs that produced it.</td></tr>
+          <tr><td class="col-num">5</td><td>Approved versions are locked read-only; any change re-enters at packaging and re-runs the gate. This agent releases an approved package reference only &mdash; it never publishes, posts or sends externally; Phase 2 owns activation.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Explainability</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Decision Logic</th><td>Every finding cites rule ID, exact location and quoted text (contextual findings add a one-sentence reasoning trace); verdicts are a pure function of blocking-finding count; every routing decision cites the policy rule and asset class; the approval chain is self-explanatory by construction.</td></tr>
+          <tr><th>Audit Trail</th><td>Log campaign_id, asset_id and hash, rules-pack/guidelines/policy versions, all findings, verdicts, routes, tasks, outcomes, identities, timestamps, locks, disputes and resolutions, model + engine versions &mdash; the package's full chain of custody.</td></tr>
+          <tr><th>Human Review Triggers</th><td>The whole agent exists to orchestrate human review. Additional triggers: disputed findings; repeated failures of the same rule on one campaign (systemic issue); calibration alarms; identity or lock failures; SLA breaches.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gov-subsection">
+      <h4>Responsibility &amp; Ownership</h4>
+      <table class="kv-table">
+        <tbody>
+          <tr><th>Owner</th><td>ShiftAI AiCoE (build/operate) &middot; Marketing Lead + Grammar/Quality Reviewer (rules-pack authority) &middot; VP Marketing/CMO (routing-policy approval)</td></tr>
+          <tr><th>Autonomy Level</th><td>May autonomously check, report, block, return, route, track, record and lock within policy; zero authority over approval decisions, rule waivers, or policy content</td></tr>
+          <tr><th>Data Sensitivity</th><td>Pre-release content, the rules pack, approval records and reviewer identities (internal audit data); calibration logs contain reviewer judgments &mdash; internal only. Retain approval chains per LevelShift record-keeping policy</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>System Prompt (contextual pass &mdash; rules and routing modules are deterministic, no prompt)</h3>
+    <div class="prompt-block">You are the contextual compliance checker inside the Quality Gate &amp; Approval Agent for the LevelShift Content to Campaign workflow. Given one content asset and the versioned rules pack, evaluate only the rules assigned to the contextual pass: (1) Business Central and F&amp;O independence in meaning &mdash; fail any content that connects them as one story, roadmap or migration path, even without naming both explicitly; (2) Copilot claims &mdash; fail any statement implying Copilot capability outside D365 cloud products, including AX; (3) claim sourcing &mdash; fail any competitor reference, statistic or ROI statement lacking a resolvable claim-to-source marker; (4) tone &mdash; fail urgency- or fear-based framing and overselling; flag hype adjacent to the banned-terms list as advisory; (5) brand voice &mdash; compare against the brand guidelines and flag divergence as advisory. Report findings only, in the required JSON schema: rule ID, severity, exact location, quoted text, one-sentence reasoning, and a remediation direction in plain description &mdash; never rewrite the content yourself. If you cannot complete a check, say so explicitly; never default a rule to pass.</div>
+  </div>
+</div>
+
+<footer>ShiftAI Design Studio &mdash; Technical Build Specification &mdash; LevelShift Marketing, Content to Campaign Phase 1 &mdash; For delivery/engineering team use</footer>
+
+</div>
+</body>
+</html>

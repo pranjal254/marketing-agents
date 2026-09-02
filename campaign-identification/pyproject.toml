@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "campaign-identification-agent"
+version = "0.1.0"
+description = "LevelShift Content-to-Campaign Phase 1 — Agent 1: Campaign Identification (intake to approved brief)"
+requires-python = ">=3.12"
+dependencies = [
+    "shiftai-shared>=0.1.0",
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+campaign_identification = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = false
+mypy_path = "src"
+packages = ["campaign_identification"]
+
+[[tool.mypy.overrides]]
+module = ["docx", "docx.*", "jsonschema", "jsonschema.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

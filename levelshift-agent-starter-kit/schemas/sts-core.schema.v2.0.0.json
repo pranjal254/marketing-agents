@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shiftai.levelshift.internal/schemas/sts-core/2.0.0",
+  "title": "ShiftAI Telemetry Standard - Core record (STS v2.0.0)",
+  "description": "Validates the flattened attribute map of one agent telemetry/audit record. v2 is a from-scratch redesign aligned to the Autonomous Process Execution reference architecture: records mirror the Control Plane event contract (decision_made, action_taken, case_escalated, config_loaded) and the append-only AuditRecord (layer + config/model/prompt versions). Removed from v1.x: the agent registry (registry_id), conformance tiers (Bronze/Silver/Gold), onboarding classes, telemetry.class/adapter fields, and the completeness score. Agent identity is the agentId declared in the agent's Business Capability Layer config. Prompt/completion content is never carried. Vendor-namespace passthrough attributes remain allowed and unvalidated.",
+  "type": "object",
+  "properties": {
+    "shiftai.schema.version": { "type": "string", "pattern": "^2\\.\\d+\\.\\d+$" },
+    "shiftai.tenant.id": { "type": "string", "minLength": 1 },
+    "shiftai.agent.id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The agentId declared in the agent's Business Capability Layer config. Self-declared and stable; there is no central registry."
+    },
+    "shiftai.agent.type": { "enum": ["decision", "enrichment", "orchestrator"] },
+    "shiftai.config.version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Business Capability config version active for this case. Required on every record so past decisions stay explainable after config changes."
+    },
+    "deployment.environment.name": { "enum": ["production", "staging", "dev"] },
+    "shiftai.timestamp": { "type": "string", "format": "date-time" },
+    "shiftai.event.type": {
+      "enum": [
+        "case_intake",
+        "config_loaded",
+        "decision_made",
+        "policy_check",
+        "action_taken",
+        "case_escalated",
+        "human_gate",
+        "case_resolved",
+        "tool_execution",
+        "error",
+        "run_summary"
+      ]
+    },
+    "shiftai.case.id": { "type": "string", "minLength": 1 },
+    "shiftai.trace.id": { "type": "string", "minLength": 1 },
+    "shiftai.span.id": { "type": "string" },
+    "shiftai.parent.span.id": { "type": "string" },
+    "shiftai.span.duration_ms": { "type": "integer", "minimum": 0 },
+    "shiftai.risk.tier": { "enum": ["low", "medium", "high", "critical"] },
+    "shiftai.data.classification": { "enum": ["public", "internal", "confidential", "restricted"] },
+    "shiftai.layer": {
+      "enum": ["L1", "L2", "novelty", "L3", "L4", "escalation", "resolution"],
+      "description": "Which orchestration step produced this record (per the AuditRecord contract)."
+    },
+    "shiftai.model.version": { "type": "string" },
+    "shiftai.prompt.template.id": { "type": "string" },
+    "shiftai.prompt.template.version": { "type": "string" },
+    "shiftai.decision.action_class": {
+      "type": ["string", "null"],
+      "description": "Selected action class from the config taxonomy. null is an explicit abstention."
+    },
+    "shiftai.decision.confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "shiftai.decision.layer": { "enum": [1, 2, 3] },
+    "shiftai.action.class": { "type": "string" },
+    "shiftai.action.idempotency_key": { "type": "string" },
+    "shiftai.action.external_ref": { "type": "string" },
+    "shiftai.escalation.tier": { "enum": [1, 2, 3] },
+    "shiftai.escalation.reason": { "enum": ["novelty", "low_confidence", "policy_gap"] },
+    "shiftai.escalation.routed_to": { "type": "string" },
+    "shiftai.control.kill_switch": { "enum": ["clear", "paused"] },
+    "shiftai.control.rate_breaker": { "enum": ["ok", "tripped"] },
+    "shiftai.precedent.case_id": { "type": "string" },
+    "shiftai.precedent.similarity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "shiftai.precedent.freshness": { "enum": ["fresh", "stale"] },
+    "shiftai.resolution.outcome_source": { "enum": ["agent", "human", "seed"] },
+    "shiftai.hitl.decision": { "enum": ["approved", "rejected", "modified", "timeout"] },
+    "shiftai.hitl.actor.role": { "type": "string" },
+    "shiftai.policy.ids": { "type": "array", "items": { "type": "string" } },
+    "shiftai.policy.decision": { "enum": ["allow", "deny", "escalate", "redact"] },
+    "shiftai.outcome": { "enum": ["success", "failure", "partial", "escalated", "cancelled", "unknown"] },
+    "error.type": { "type": "string" },
+    "shiftai.cost.amount": { "type": "number", "minimum": 0 },
+    "shiftai.cost.currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "shiftai.cost.model": { "enum": ["measured", "rate_card", "estimated"] },
+    "shiftai.cost.scope": { "enum": ["run_total", "span_incremental"] },
+    "shiftai.process.name": { "type": "string" },
+    "shiftai.stage.id": { "type": "string" },
+    "shiftai.business_object.type": { "type": "string" },
+    "shiftai.business_object.id": { "type": "string" },
+    "gen_ai.request.model": { "type": "string" },
+    "gen_ai.response.model": { "type": "string" },
+    "gen_ai.usage.input_tokens": { "type": "integer", "minimum": 0 },
+    "gen_ai.usage.output_tokens": { "type": "integer", "minimum": 0 },
+    "gen_ai.usage.cache_read.input_tokens": { "type": "integer", "minimum": 0 },
+    "gen_ai.usage.reasoning.output_tokens": { "type": "integer", "minimum": 0 },
+    "gen_ai.response.finish_reasons": { "type": "array", "items": { "type": "string" } },
+    "gen_ai.tool.name": { "type": "string" },
+    "gen_ai.tool.call.id": { "type": "string" },
+    "gen_ai.conversation.id": { "type": "string" }
+  },
+  "required": [
+    "shiftai.schema.version",
+    "shiftai.tenant.id",
+    "shiftai.agent.id",
+    "shiftai.agent.type",
+    "shiftai.config.version",
+    "deployment.environment.name",
+    "shiftai.timestamp",
+    "shiftai.event.type",
+    "shiftai.case.id",
+    "shiftai.trace.id",
+    "shiftai.risk.tier",
+    "shiftai.data.classification"
+  ],
+  "allOf": [
+    {
+      "description": "decision_made records carry the decision payload and the producing layer",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "decision_made" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": {
+        "required": [
+          "shiftai.decision.action_class",
+          "shiftai.decision.confidence",
+          "shiftai.decision.layer",
+          "shiftai.layer"
+        ]
+      }
+    },
+    {
+      "description": "action_taken records carry the action class and idempotency key",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "action_taken" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["shiftai.action.class", "shiftai.action.idempotency_key"] }
+    },
+    {
+      "description": "policy_check records carry the policy decision",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "policy_check" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["shiftai.policy.decision"] }
+    },
+    {
+      "description": "run_summary records carry the terminal outcome",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "run_summary" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["shiftai.outcome"] }
+    },
+    {
+      "description": "case_escalated records carry tier and reason",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "case_escalated" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["shiftai.escalation.tier", "shiftai.escalation.reason"] }
+    },
+    {
+      "description": "human_gate records carry the human decision and actor role (never personal identity)",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "human_gate" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["shiftai.hitl.decision", "shiftai.hitl.actor.role"] }
+    },
+    {
+      "description": "error events must classify the error",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "error" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["error.type"] }
+    },
+    {
+      "description": "failed outcomes must classify the error",
+      "if": {
+        "properties": { "shiftai.outcome": { "const": "failure" } },
+        "required": ["shiftai.outcome"]
+      },
+      "then": { "required": ["error.type"] }
+    },
+    {
+      "description": "case_resolved records carry the outcome and its source, closing the learning loop",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "case_resolved" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["shiftai.outcome", "shiftai.resolution.outcome_source"] }
+    },
+    {
+      "description": "LLM-bearing records carry token usage and the prompt template version",
+      "if": { "required": ["gen_ai.request.model"] },
+      "then": {
+        "required": [
+          "gen_ai.usage.input_tokens",
+          "gen_ai.usage.output_tokens",
+          "shiftai.prompt.template.version"
+        ]
+      }
+    },
+    {
+      "description": "cost values state currency, derivation, and attribution scope (prevents double-counting)",
+      "if": { "required": ["shiftai.cost.amount"] },
+      "then": { "required": ["shiftai.cost.currency", "shiftai.cost.model", "shiftai.cost.scope"] }
+    },
+    {
+      "description": "tool_execution records identify the tool and its duration",
+      "if": {
+        "properties": { "shiftai.event.type": { "const": "tool_execution" } },
+        "required": ["shiftai.event.type"]
+      },
+      "then": { "required": ["gen_ai.tool.name", "shiftai.span.duration_ms"] }
+    }
+  ],
+  "additionalProperties": true
+}

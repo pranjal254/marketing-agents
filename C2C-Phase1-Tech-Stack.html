@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Content to Campaign Phase 1: Tech Stack to Build the 5 Agents</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI', -apple-system, Arial, sans-serif; color:#0f172a; background:#fff; line-height:1.5; }
+  .container { max-width:980px; margin:0 auto; padding:32px 26px; }
+  .eyebrow { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:#0052CC; font-weight:700; margin-bottom:4px; }
+  h1 { font-size:22px; margin-bottom:4px; }
+  .meta { font-size:12px; color:#64748b; margin-bottom:18px; }
+  h2 { font-size:12.5px; text-transform:uppercase; letter-spacing:0.5px; color:#475569; margin:18px 0 8px; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  thead th { text-align:left; background:#0f172a; color:#fff; padding:8px 11px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px; }
+  thead th:first-child { border-radius:6px 0 0 0; } thead th:last-child { border-radius:0 6px 0 0; }
+  tbody td { padding:8px 11px; border-bottom:1px solid #eef1f5; vertical-align:top; color:#334155; }
+  tbody tr:nth-child(even) { background:#f8fafc; }
+  .note { background:linear-gradient(135deg,#f0f7ff,#eef2ff); border:1px solid #cfe3ff; border-radius:8px; padding:11px 14px; font-size:12px; color:#334155; margin-top:14px; }
+  footer { text-align:center; font-size:10px; color:#94a3b8; margin-top:20px; padding-top:12px; border-top:1px solid #e2e8f0; }
+  @media print { body { font-size:11.5px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="eyebrow">Commercial Briefing | Internal</div>
+  <h1>Tech Stack Required to Build the 5 Agents</h1>
+  <div class="meta">Content to Campaign Phase 1 · LevelShift Marketing · Plain-language summary for the commercial team</div>
+
+  <h2>What each agent is built with</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th style="width:165px;">Agent</th>
+        <th style="width:190px;">AI Brain</th>
+        <th>What else is needed to build it</th>
+        <th style="width:100px;">AI Cost / Campaign</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>Campaign Identification</strong><br/>(turns requests into approved briefs)</td>
+        <td>Claude Sonnet 5 (the fast, efficient model)</td>
+        <td>Built as a standalone Python agent using the Claude Agent SDK, connected to Microsoft Forms, Excel and OneDrive so it can read requests and write the brief as a Word document. Once built and tested, it is onboarded to Execution Studio to run.</td>
+        <td>~$0.05</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Campaign-in-a-Box Orchestrator</strong><br/>(plans the campaign, then packages it)</td>
+        <td>Claude Opus 5 (the premium model, for the deep planning work). The packaging step uses plain automation logic, no AI needed</td>
+        <td>Built as a standalone Python agent, connected to SemRush (market and competitor data), OneDrive (content library search), and Word/Excel (calendar, checklist, workspace). Onboarded to Execution Studio once ready.</td>
+        <td>~$0.65</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>Content Repurposing</strong><br/>(writes the flagship, spins out 8 channel versions)</td>
+        <td>Claude Opus 5 (premium model, because writing quality is the product here)</td>
+        <td>Built as a standalone Python agent, connected to Word and OneDrive for versioned drafts. Bulk-processing mode is used for the 8 spin-off versions, which halves the AI cost of that step. Onboarded to Execution Studio once ready.</td>
+        <td>~$3.00</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Collaboration &amp; Iteration</strong><br/>(gathers reviewer comments, applies agreed edits)</td>
+        <td>Claude Sonnet 5</td>
+        <td>Built as a standalone Python agent, connected to Word (reads everyone's comments, applies tracked changes) and Excel (updates the status tracker). Sends reviewer reminders automatically. Onboarded to Execution Studio once ready.</td>
+        <td>~$0.45</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>Quality Gate &amp; Approval</strong><br/>(checks brand rules, routes sign-offs)</td>
+        <td>Simple rule-checking code for the black-and-white rules (free, instant), plus Claude Sonnet 5 only for judgment calls like tone and meaning</td>
+        <td>Built as a standalone Python agent: a rules checker, plus workflow logic that assigns review tasks, sends reminders, records every approval and locks the finished package in OneDrive. Onboarded to Execution Studio once ready.</td>
+        <td>~$0.35</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>The full stack in one view</h2>
+  <table>
+    <thead><tr><th style="width:200px;">Layer</th><th>Technology</th><th>In plain terms</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Programming language</strong></td><td>Python (agent logic), TypeScript/Node.js (dashboard and user-facing screens)</td><td>The code our engineers write to build the agents</td></tr>
+      <tr><td><strong>AI models</strong></td><td>Anthropic Claude: Opus 5 and Sonnet 5, via the Claude API and Agent SDK</td><td>The intelligence. Premium model only where writing and planning quality matter, efficient model everywhere else</td></tr>
+      <tr><td><strong>Platform</strong></td><td>ShiftAI Execution Studio</td><td>Our own product. Agents are built and tested separately first, then onboarded to Execution Studio, which runs them in production: triggers them at the right moment, routes approval tasks to people, and shows a live dashboard of every campaign</td></tr>
+      <tr><td><strong>Client systems</strong></td><td>Microsoft 365: OneDrive, Word, Excel, Forms (via Microsoft's standard connection APIs)</td><td>The tools the marketing team already uses. No new tools for them to learn</td></tr>
+      <tr><td><strong>External data</strong></td><td>SemRush</td><td>Market and competitor research feed, so every claim in the content has a real source</td></tr>
+      <tr><td><strong>Memory and audit</strong></td><td>Campaign Context Store (database) plus a standard activity log from every agent</td><td>One shared record of every brief, draft, decision and approval. This log is also how the system learns from human corrections and becomes more autonomous over time</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>The commercial story in one line:</strong> five AI agents, built independently in Python and onboarded to our own Execution Studio platform, powered by Claude, working inside the client's existing Microsoft 365 environment, for roughly <strong>$5 of AI cost per full campaign</strong>, with every human approval gate preserved and a built-in learning loop that makes the system more autonomous the more it is used.
+  </div>
+
+  <footer>ShiftAI Design Studio · Content to Campaign Phase 1 · Internal use only</footer>
+</div>
+</body>
+</html>

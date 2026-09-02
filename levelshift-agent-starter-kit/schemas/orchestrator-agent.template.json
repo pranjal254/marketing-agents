@@ -1,0 +1,16 @@
+{
+  "agentType": "orchestrator",
+  "agentId": "<<AGENT_ID>>",
+  "version": "0.0.1-template",
+  "stages": [
+    {
+      "id": "<<stage_id>>",
+      "handledByAgentId": "<<child_agent_id>>",
+      "onSuccessNextStage": "<<next_stage_id_or_null>>",
+      "onEscalationNextStage": "<<stage_id_or_null>>"
+    }
+  ],
+  "controlScope": {
+    "cascadesTo": ["<<child_agent_id>>"]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "agentType": "decision",
+  "agentId": "campaign_identification",
+  "version": "0.1.0",
+  "intakeSchema": [
+    { "field": "objective", "type": "text", "required": true },
+    { "field": "business_unit", "type": "text", "required": true },
+    { "field": "vertical", "type": "select", "required": true, "options": ["financial_services", "manufacturing", "technology"] },
+    { "field": "target_segment", "type": "select", "required": true, "options": ["type_3", "type_4", "standard"] },
+    { "field": "offer_topic", "type": "text", "required": true },
+    { "field": "channels", "type": "list", "required": true },
+    { "field": "timeline_start", "type": "date", "required": true },
+    { "field": "timeline_end", "type": "date", "required": true },
+    { "field": "owner", "type": "text", "required": true },
+    { "field": "budget_flag", "type": "boolean", "required": true },
+    { "field": "requester", "type": "text", "required": true },
+    { "field": "free_text_context", "type": "text", "required": false }
+  ],
+  "policyRules": [
+    { "id": "missing_mandatory_fields", "condition": "any mandatory brief-template field is missing or ambiguous", "resultActionClass": "request_gaps" },
+    { "id": "bc_fo_mixed", "condition": "request mixes Business Central and F&O in one campaign concept", "resultActionClass": "flag_bc_fo_mix" },
+    { "id": "fresh_duplicate", "condition": "open campaign with same BU + vertical + overlapping topic and window (fresh record)", "resultActionClass": "flag_duplicate" }
+  ],
+  "actionClassTaxonomy": [
+    { "id": "route_for_approval", "label": "Route brief for approval", "description": "Brief is complete, validated and classified; assemble the Word brief and route it to the BU Campaign Lead for explicit approval." },
+    { "id": "request_gaps", "label": "Request missing information", "description": "Mandatory brief fields are missing or ambiguous; send the requester targeted questions and hold the brief in awaiting_input." },
+    { "id": "flag_bc_fo_mix", "label": "Flag BC/F&O mix", "description": "The request combines Business Central and F&O in one campaign concept; propose a split and hold for a human decision — never merge silently." },
+    { "id": "flag_duplicate", "label": "Flag duplicate/conflict", "description": "An open campaign overlaps this request (BU, vertical, topic, window); surface the conflicting campaign ids for a human decision." },
+    { "id": "escalate_unclassifiable", "label": "Escalate unclassifiable request", "description": "BU or vertical cannot be classified from the request and its sources; escalate to the Marketing Lead / Manager." }
+  ],
+  "authorityEnvelope": {
+    "impactCeiling": {
+      "tier1": "may draft and route briefs and gap requests; no external commitments",
+      "tier2": "no approval, rejection or merge decisions — human only",
+      "tier3": "any request touching pricing, legal or partner commitments always escalates"
+    },
+    "reversibilityRules": {
+      "brief_draft": "reversible — versioned document, additive writes only",
+      "approval_routing": "reversible — task can be reassigned",
+      "approval_decision": "human-owned — the agent never makes it"
+    },
+    "domainBoundary": "Campaign intake only: validate, classify, flag and draft briefs. May not approve briefs, reject requests, alter the quarterly plan, or read/write Salesforce or Pardot.",
+    "dataRecencyMaxDays": 90,
+    "complianceCeiling": "pricing, legal or partner commitments always route to a human"
+  },
+  "routingMap": [
+    { "uncertaintyType": "data_ambiguity", "routesTo": "requester" },
+    { "uncertaintyType": "policy_gap", "routesTo": "marketing-lead-queue" },
+    { "uncertaintyType": "confidence_only", "routesTo": "bu-campaign-lead-queue" }
+  ],
+  "tierThresholds": {
+    "tier1": "missing or ambiguous mandatory fields — gap request to the requester",
+    "tier2": "unclassifiable BU/vertical, disputed duplicate flags, BC/F&O mix, or requester unresponsive after two gap requests — Marketing Lead / Manager",
+    "tier3": "pricing, legal or partner commitments — Marketing Lead + BU Campaign Lead"
+  },
+  "reasonCodes": [
+    "missing_field",
+    "ambiguous_field",
+    "unclassifiable_bu",
+    "duplicate_disputed",
+    "bc_fo_mix",
+    "infeasible_timeline",
+    "requester_unresponsive",
+    "sla_breach",
+    "tool_failure"
+  ],
+  "precedentDecayDays": 90,
+  "reasoningProvider": "claude"
+}

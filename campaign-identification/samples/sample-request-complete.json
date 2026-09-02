@@ -1,0 +1,15 @@
+{
+  "requester": "priya.marketing@levelshift.com",
+  "objective": "Generate qualified pipeline for the ERP modernization offer in manufacturing accounts",
+  "business_unit": "Technology",
+  "vertical": "manufacturing",
+  "target_segment": "type_3",
+  "offer_topic": "ERP modernization assessment for mid-market manufacturers",
+  "channels": "events, email, linkedin",
+  "timeline_start": "2026-10-01",
+  "timeline_end": "2026-11-15",
+  "owner": "priya.marketing@levelshift.com",
+  "budget_flag": "yes",
+  "products": ["BC"],
+  "free_text_context": "Follow-up demand from the September manufacturing roundtable; BU plan row 14."
+}

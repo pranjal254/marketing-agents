@@ -1,0 +1,15 @@
+{
+  "agentType": "enrichment",
+  "agentId": "<<AGENT_ID>>",
+  "version": "0.0.1-template",
+  "sourceSchema": [
+    { "field": "<<source_field>>", "type": "<<type>>" }
+  ],
+  "enrichmentRules": [
+    { "id": "<<rule_id>>", "description": "<<what this rule derives, from which sources>>" }
+  ],
+  "outputSchema": [
+    { "field": "<<output_field>>", "type": "<<type>>" }
+  ],
+  "insufficientDataConfidenceThreshold": 0.5
+}
