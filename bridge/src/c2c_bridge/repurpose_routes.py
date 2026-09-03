@@ -149,6 +149,12 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
     @app.get("/api/box/campaigns/{campaign_id}/drafts")
     def drafts(campaign_id: str) -> dict[str, Any]:
         case = rp_db.load_case(store(), campaign_id)
+        if case is None and box_db.load_plan_case(store(), campaign_id) is None:
+            # Unknown campaign (e.g. a session from before a bridge restart) —
+            # a 404 here lets the studio stop polling instead of looping forever.
+            raise HTTPException(
+                status_code=404, detail=f"no campaign plan for {campaign_id}"
+            )
         root = bridge().box_workspace_dir
         draft_records = [
             _draft_view(d.model_dump(), root)

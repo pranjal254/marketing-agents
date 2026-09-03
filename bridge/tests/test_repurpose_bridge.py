@@ -115,6 +115,12 @@ def test_flagship_requires_confirmed_plan(client: TestClient) -> None:
     assert outcome["escalation_reasons"] == ["plan_not_ready"]
 
 
+def test_drafts_for_unknown_campaign_is_404(client: TestClient) -> None:
+    """A campaign from a previous bridge session must 404 (the studio stops its
+    poll on 404) — never a 200 with empty state."""
+    assert client.get("/api/box/campaigns/cmp_gone/drafts").status_code == 404
+
+
 def test_full_repurposing_lifecycle_over_http(client: TestClient) -> None:
     campaign_id = _campaign_in_production(client)
 
