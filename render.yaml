@@ -1,0 +1,28 @@
+# Render blueprint for the C2C Agent Bridge (test deployment).
+# Free plan notes: the service sleeps after ~15 min idle (first request then takes
+# ~50s), and the disk is ephemeral — bridge sessions are disposable by design, so
+# a restart simply starts a fresh session (prior runs are not retained).
+services:
+  - type: web
+    name: c2c-agent-bridge
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_PROVIDER
+        value: azure_openai
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false # set in the Render dashboard — never in the repo
+      - key: AZURE_OPENAI_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_DEPLOYMENT
+        sync: false
+      - key: AZURE_OPENAI_API_VERSION
+        value: 2025-04-01-preview
+      - key: BRIDGE_API_TOKEN
+        generateValue: true # Render generates a strong secret; copy it to Vercel
+      - key: BRIDGE_CORS_ORIGINS
+        sync: false # your studio origin, e.g. https://your-studio.vercel.app
+      - key: SHIFTAI_ENVIRONMENT
+        value: staging

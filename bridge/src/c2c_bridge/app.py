@@ -1,13 +1,18 @@
-"""FastAPI dev bridge exposing the Campaign Identification agent to the Marketing
-Studio UI. The human gates stay human: this service only carries the requester's
-answers and the BU Campaign Lead's explicit decision into the agent.
+"""FastAPI dev bridge exposing the Campaign Identification and Campaign-in-a-Box
+agents to the Marketing Studio UI. The human gates stay human: this service only
+carries requester answers and explicit identity-stamped decisions into the agents.
 
 Run:  uvicorn c2c_bridge.app:app --port 8787
+
+Hosted deployments MUST set BRIDGE_API_TOKEN: every /api route except /api/health
+then requires `Authorization: Bearer <token>` (or `?token=` for browser-navigated
+requests: SSE stream and document downloads, which cannot carry headers).
 """
 
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import os
 import threading
@@ -26,9 +31,9 @@ from campaign_identification.persistence import (
     KIND_GAP_REQUEST,
     LocalWorkspace,
 )
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from shiftai_shared.business_capability import load_decision_config
 from shiftai_shared.config import SharedSettings, load_settings
@@ -194,9 +199,14 @@ def _new_session_dir(root: Path) -> Path:
     return root / f"session-{stamp}-{uuid4().hex[:4]}"
 
 
-def create_app(workdir: Path | None = None, settings: SharedSettings | None = None) -> FastAPI:
+def create_app(
+    workdir: Path | None = None,
+    settings: SharedSettings | None = None,
+    api_token: str | None = None,
+) -> FastAPI:
     root = workdir or Path(os.environ.get("BRIDGE_WORKDIR", str(DEFAULT_WORKDIR)))
     app_settings = settings or load_settings()
+    token = (api_token if api_token is not None else os.environ.get("BRIDGE_API_TOKEN", "")).strip()
     holder: dict[str, Bridge] = {"bridge": Bridge(_new_session_dir(root), app_settings)}
 
     def bridge() -> Bridge:
@@ -215,6 +225,25 @@ def create_app(workdir: Path | None = None, settings: SharedSettings | None = No
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    if token:
+        # Hosted mode: shared-secret gate on every API route. /api/health stays
+        # open (platform health checks); OPTIONS passes so CORS preflight works
+        # (this middleware runs outside the CORS layer). Browser-navigated
+        # requests (SSE stream, document downloads) supply ?token= because they
+        # cannot carry an Authorization header.
+        @app.middleware("http")
+        async def require_token(request: Request, call_next: Any) -> Response:
+            path = request.url.path
+            if request.method == "OPTIONS" or path == "/api/health" or not path.startswith("/api"):
+                return await call_next(request)  # type: ignore[no-any-return]
+            header = request.headers.get("authorization", "")
+            supplied = header[7:] if header.lower().startswith("bearer ") else (
+                request.query_params.get("token", "")
+            )
+            if not hmac.compare_digest(supplied, token):
+                return JSONResponse({"detail": "unauthorized"}, status_code=401)
+            return await call_next(request)  # type: ignore[no-any-return]
 
     # ------------------------------------------------------------------ meta
     @app.get("/api/health")
