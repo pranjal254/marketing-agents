@@ -1,0 +1,187 @@
+- main [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f5e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f5e8]
+        - generic [ref=f5e9]:
+          - strong [ref=f5e10]: ShiftAI
+          - generic [ref=f5e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f5e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f5e15]:
+      - paragraph [ref=f5e16]: Workspace
+      - button "Home" [ref=f5e17] [cursor=pointer]
+      - button "Campaigns" [ref=f5e22] [cursor=pointer]
+      - button "Agents" [ref=f5e27] [cursor=pointer]
+      - button "Approvals" [ref=f5e32] [cursor=pointer]
+      - button "Package library" [ref=f5e37] [cursor=pointer]
+      - button "Insights" [ref=f5e42] [cursor=pointer]
+      - button "Activity" [ref=f5e47] [cursor=pointer]
+    - generic [ref=f5e52]:
+      - button "Agent workflow" [ref=f5e53] [cursor=pointer]
+      - group [ref=f5e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f5e59] [cursor=pointer]:
+          - generic [ref=f5e60]: RP
+          - generic [ref=f5e61]:
+            - strong [ref=f5e62]: Rishi Patel
+            - generic [ref=f5e63]: Marketing Lead
+  - generic [ref=f5e66]:
+    - generic [ref=f5e67]:
+      - generic [ref=f5e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f5e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f5e73] [cursor=pointer]
+        - generic [ref=f5e76]: ⌘K
+      - generic [ref=f5e77]:
+        - button "How this demo works" [ref=f5e78] [cursor=pointer]
+        - button "Notifications, 3 unread" [ref=f5e82] [cursor=pointer]:
+          - generic [ref=f5e86]: "3"
+        - button "Open context panel" [ref=f5e87] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f5e90]: Marketing Lead
+    - generic [ref=f5e99]:
+      - button "Campaigns Copilot readiness advisory offer" [ref=f5e100] [cursor=pointer]:
+        - text: Campaigns
+        - generic [ref=f5e103]: Copilot readiness advisory offer
+      - generic [ref=f5e104]:
+        - generic [ref=f5e105]:
+          - generic [ref=f5e106]: CO
+          - generic [ref=f5e107]:
+            - generic [ref=f5e108]:
+              - heading "Copilot readiness advisory offer" [level=1] [ref=f5e109]
+              - generic [ref=f5e110]: In production
+            - paragraph [ref=f5e111]: Financial Services demand generation · 2027-01-10 to 2027-03-20
+        - button "Copy summary" [ref=f5e113] [cursor=pointer]
+      - generic [ref=f5e114]:
+        - generic [ref=f5e115]:
+          - generic [ref=f5e116]: Journey progress
+          - strong [ref=f5e117]: 4 of 9 steps
+          - generic "3 of 9 campaign steps complete" [ref=f5e118]
+        - generic [ref=f5e128]:
+          - generic [ref=f5e129]: Content assets
+          - strong [ref=f5e130]: 6 registered
+          - generic [ref=f5e131]: From the Campaign-in-a-Box checklist
+        - generic [ref=f5e132]:
+          - generic [ref=f5e133]: Waiting on
+          - strong [ref=f5e134]: Agents executing
+          - generic [ref=f5e135]: No human gate open
+        - generic [ref=f5e136]:
+          - generic [ref=f5e137]: AI cost so far
+          - strong [ref=f5e138]: $0.00
+          - generic [ref=f5e139]: Within $6.00 envelope
+      - tablist [ref=f5e140]:
+        - tab "Journey" [selected] [ref=f5e141] [cursor=pointer]
+        - tab "Brief & plan" [ref=f5e142] [cursor=pointer]
+        - tab "Content production" [ref=f5e143] [cursor=pointer]
+      - generic [ref=f5e144]:
+        - generic [ref=f5e145]:
+          - generic [ref=f5e146]:
+            - generic [ref=f5e147]: Intake & planning
+            - generic [ref=f5e148]:
+              - article [ref=f5e149]:
+                - generic [ref=f5e150]:
+                  - generic [ref=f5e151]: "01"
+                  - generic [ref=f5e152]: Complete
+                - heading "Campaign request intake" [level=3] [ref=f5e153]
+                - paragraph [ref=f5e154]: Campaign Identification
+                - generic [ref=f5e155]:
+                  - generic [ref=f5e159]:
+                    - generic [ref=f5e160]: Cleared
+                    - strong [ref=f5e161]: BU Lead approves brief
+                  - button "Trace" [ref=f5e162] [cursor=pointer]
+              - article [ref=f5e163]:
+                - generic [ref=f5e164]:
+                  - generic [ref=f5e165]: "02"
+                  - generic [ref=f5e166]: Complete
+                - heading "Audience & offer" [level=3] [ref=f5e167]
+                - paragraph [ref=f5e168]: Campaign-in-a-Box
+                - generic [ref=f5e173]:
+                  - generic [ref=f5e174]: Cleared
+                  - strong [ref=f5e175]: Marketing confirms pack
+              - article [ref=f5e176]:
+                - generic [ref=f5e177]:
+                  - generic [ref=f5e178]: "03"
+                  - generic [ref=f5e179]: Complete
+                - heading "Asset plan & workflow" [level=3] [ref=f5e180]
+                - paragraph [ref=f5e181]: Campaign-in-a-Box
+                - generic [ref=f5e182]:
+                  - generic [ref=f5e186]:
+                    - generic [ref=f5e187]: Cleared
+                    - strong [ref=f5e188]: Owners confirmed
+                  - button "Trace" [ref=f5e189] [cursor=pointer]
+          - generic [ref=f5e190]:
+            - generic [ref=f5e191]: Production & assembly
+            - generic [ref=f5e192]:
+              - article [ref=f5e193]:
+                - generic [ref=f5e194]:
+                  - generic [ref=f5e195]: "04"
+                  - generic [ref=f5e196]: In progress
+                - heading "Content drafting" [level=3] [ref=f5e197]
+                - paragraph [ref=f5e198]: Content Repurposing
+                - generic [ref=f5e203]:
+                  - generic [ref=f5e204]: Waiting on
+                  - strong [ref=f5e205]: Flagship confirmed
+              - article [ref=f5e206]:
+                - generic [ref=f5e207]:
+                  - generic [ref=f5e208]: "05"
+                  - generic [ref=f5e209]: Upcoming
+                - heading "Collaboration & iteration" [level=3] [ref=f5e210]
+                - paragraph [ref=f5e211]: Collaboration Agent
+                - generic [ref=f5e216]:
+                  - generic [ref=f5e217]: Gate
+                  - strong [ref=f5e218]: Marketing Lead decision
+              - article [ref=f5e219]:
+                - generic [ref=f5e220]:
+                  - generic [ref=f5e221]: "06"
+                  - generic [ref=f5e222]: Upcoming
+                - heading "Campaign packaging" [level=3] [ref=f5e223]
+                - paragraph [ref=f5e224]: Packaging module
+                - generic [ref=f5e229]:
+                  - generic [ref=f5e230]: Gate
+                  - strong [ref=f5e231]: Runs automatically
+          - generic [ref=f5e232]:
+            - generic [ref=f5e233]: Compliance & approval
+            - generic [ref=f5e234]:
+              - article [ref=f5e235]:
+                - generic [ref=f5e236]:
+                  - generic [ref=f5e237]: "07"
+                  - generic [ref=f5e238]: Upcoming
+                - heading "Compliance checks" [level=3] [ref=f5e239]
+                - paragraph [ref=f5e240]: Quality Gate
+                - generic [ref=f5e245]:
+                  - generic [ref=f5e246]: Gate
+                  - strong [ref=f5e247]: 42 rules
+              - article [ref=f5e248]:
+                - generic [ref=f5e249]:
+                  - generic [ref=f5e250]: "08"
+                  - generic [ref=f5e251]: Upcoming
+                - heading "Human review routing" [level=3] [ref=f5e252]
+                - paragraph [ref=f5e253]: Quality Gate
+                - generic [ref=f5e258]:
+                  - generic [ref=f5e259]: Gate
+                  - strong [ref=f5e260]: Grammar QA
+              - article [ref=f5e261]:
+                - generic [ref=f5e262]:
+                  - generic [ref=f5e263]: "09"
+                  - generic [ref=f5e264]: Upcoming
+                - heading "Approval sign-off" [level=3] [ref=f5e265]
+                - paragraph [ref=f5e266]: BU Campaign Lead
+                - generic [ref=f5e271]:
+                  - generic [ref=f5e272]: Gate
+                  - strong [ref=f5e273]: Package locked
+        - generic [ref=f5e274]:
+          - generic [ref=f5e275]:
+            - generic [ref=f5e276]: ES
+            - generic [ref=f5e277]:
+              - paragraph [ref=f5e278]: Latest activity
+              - heading "Pack and plan confirmed by Rishi Patel — recorded by the live agent with identity" [level=2] [ref=f5e279]
+              - paragraph [ref=f5e280]: 1 min ago · click any journey step's Trace for the telemetry behind it.
+          - generic [ref=f5e281]:
+            - generic [ref=f5e282]:
+              - generic [ref=f5e283]: Events logged
+              - strong [ref=f5e284]: "20"
+            - generic [ref=f5e285]:
+              - generic [ref=f5e286]: Human approvals
+              - strong [ref=f5e287]: "2"
+            - generic [ref=f5e288]:
+              - generic [ref=f5e289]: AI cost
+              - strong [ref=f5e290]: $0.00
+            - button "Full activity log" [ref=f5e291] [cursor=pointer]

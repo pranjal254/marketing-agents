@@ -28,7 +28,7 @@
     "campaignFolder": "{year}-Q{quarter}-{slug}",
     "assetFile": "{campaign_slug}-{asset_type}-v{version}"
   },
-  "workspaceFolders": ["brief", "drafts", "final"],
+  "workspaceFolders": ["brief", "drafts", "confirmed", "final"],
   "routingMap": [
     { "reason": "thin_intel", "routesTo": "marketing-lead-queue" },
     { "reason": "unsourced_claim", "routesTo": "marketing-lead-queue" },

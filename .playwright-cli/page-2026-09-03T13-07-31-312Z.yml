@@ -1,0 +1,59 @@
+- main [ref=f4e3]:
+  - complementary [ref=f4e4]:
+    - generic [ref=f4e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f4e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f4e8]
+        - generic [ref=f4e9]:
+          - strong [ref=f4e10]: ShiftAI
+          - generic [ref=f4e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f4e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f4e15]:
+      - paragraph [ref=f4e16]: Workspace
+      - button "Home" [ref=f4e17] [cursor=pointer]
+      - button "Campaigns" [ref=f4e22] [cursor=pointer]
+      - button "Agents" [ref=f4e27] [cursor=pointer]
+      - button "Approvals" [ref=f4e212] [cursor=pointer]
+      - button "Package library" [ref=f4e38] [cursor=pointer]
+      - button "Insights" [ref=f4e43] [cursor=pointer]
+      - button "Activity" [ref=f4e48] [cursor=pointer]
+    - generic [ref=f4e53]:
+      - button "Agent workflow" [ref=f4e54] [cursor=pointer]
+      - group [ref=f4e59]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f4e60] [cursor=pointer]:
+          - generic [ref=f4e61]: RP
+          - generic [ref=f4e62]:
+            - strong [ref=f4e63]: Rishi Patel
+            - generic [ref=f4e64]: Marketing Lead
+  - generic [ref=f4e67]:
+    - generic [ref=f4e68]:
+      - generic [ref=f4e70]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f4e73]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f4e74] [cursor=pointer]
+        - generic [ref=f4e77]: ⌘K
+      - generic [ref=f4e78]:
+        - button "How this demo works" [ref=f4e79] [cursor=pointer]
+        - button "Notifications, 3 unread" [ref=f4e213] [cursor=pointer]:
+          - generic [ref=f4e87]: "3"
+        - button "Open context panel" [ref=f4e88] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f4e91]: Marketing Lead
+    - generic [ref=f4e100]:
+      - generic [ref=f4e102]:
+        - heading "Review with the full context" [level=1] [ref=f4e103]
+        - paragraph [ref=f4e104]: Every decision includes the asset, source lineage, rules and approval history. You are acting as Rishi Patel, Marketing Lead.
+      - generic [ref=f4e106]:
+        - complementary [ref=f4e107]:
+          - generic [ref=f4e108]:
+            - heading "My queue" [level=2] [ref=f4e109]
+            - generic [ref=f4e110]: 0 open
+          - generic [ref=f4e214]:
+            - paragraph [ref=f4e215]: No open tasks for Rishi Patel.
+            - paragraph [ref=f4e216]: Switch person via the profile menu to see other queues.
+        - generic [ref=f4e217]:
+          - heading "All clear" [level=3] [ref=f4e218]
+          - paragraph [ref=f4e219]: Nothing waits on Rishi Patel right now. Agents keep executing and new gates will land here.
+      - generic [ref=f4e206]:
+        - generic [ref=f4e207]:
+          - heading "Turnaround watch" [level=2] [ref=f4e208]
+          - paragraph [ref=f4e209]: Live from open review tasks. Reminders go out automatically at 50% and 90% of each review window; persistent stalls escalate to the Marketing Lead.
+        - paragraph [ref=f4e211]: No open reviews. New review tasks appear here with how much time remains.

@@ -659,11 +659,15 @@ class CampaignBoxOrchestrator:
         actor_id: str,
         actor_role: str = "content-reviewer",
         claim_refs: list[str] | None = None,
+        version: int | None = None,
     ) -> RegisteredAsset:
         """Spec input ``confirmed_assets``: a content-confirmed asset with its human
         confirmation record (production: Content Collaboration Agent; dev: bridge
         stand-in). The confirmation record is required — assets without one can
-        never enter a package."""
+        never enter a package. ``version`` may be supplied by the caller when the
+        producing agent's draft versions must stay ahead of this registry's counter
+        (Agent 3 stages v1..vN in the same drafts folder); it must exceed every
+        prior registration."""
         case = self._load_case_or_raise(
             campaign_id, expected={"in_production", "packaging_blocked"}
         )
@@ -674,10 +678,17 @@ class CampaignBoxOrchestrator:
         ctx = RunContext(case_id=campaign_id, trace_id=str(case["trace_id"]))
         prior = [a for a in db.load_registered_assets(self.deps.store, campaign_id)
                  if a.asset_id == asset_id]
-        version = (max(a.version for a in prior) + 1) if prior else 1
+        next_version = (max(a.version for a in prior) + 1) if prior else 1
+        if version is not None and version < next_version:
+            raise PlanGateError(
+                f"registered version {version} must be >= {next_version} for {asset_id!r}"
+            )
+        version = version if version is not None else next_version
+        # Confirmed intake copies live apart from the producing agent's working
+        # drafts (Agent 3 stages its versions in drafts/) — no name collisions.
         file_ref = self._upload_once(
             ctx, f"{campaign_id}:asset:{asset_id}:v{version}",
-            f"{case['folder']}/drafts", filename, content,
+            f"{case['folder']}/confirmed", filename, content,
         )
         record = ConfirmationRecord(
             kind="asset_content", decision="confirmed", actor_id=actor_id,

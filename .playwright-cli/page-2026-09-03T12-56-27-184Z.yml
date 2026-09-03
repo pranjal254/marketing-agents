@@ -1,0 +1,85 @@
+- main [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f1e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f1e8]
+        - generic [ref=f1e9]:
+          - strong [ref=f1e10]: ShiftAI
+          - generic [ref=f1e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f1e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f1e15]:
+      - paragraph [ref=f1e16]: Workspace
+      - button "Home" [ref=f1e17] [cursor=pointer]
+      - button "Campaigns" [ref=f1e22] [cursor=pointer]
+      - button "Agents" [ref=f1e27] [cursor=pointer]
+      - button "Approvals" [ref=f1e32] [cursor=pointer]
+      - button "Package library" [ref=f1e37] [cursor=pointer]
+      - button "Insights" [ref=f1e42] [cursor=pointer]
+      - button "Activity" [ref=f1e47] [cursor=pointer]
+    - generic [ref=f1e52]:
+      - button "Agent workflow" [ref=f1e53] [cursor=pointer]
+      - group [ref=f1e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f1e59] [cursor=pointer]:
+          - generic [ref=f1e60]: RP
+          - generic [ref=f1e61]:
+            - strong [ref=f1e62]: Rishi Patel
+            - generic [ref=f1e63]: Marketing Lead
+  - generic [ref=f1e66]:
+    - generic [ref=f1e67]:
+      - generic [ref=f1e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f1e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f1e73] [cursor=pointer]
+        - generic [ref=f1e76]: ⌘K
+      - generic [ref=f1e77]:
+        - button "How this demo works" [ref=f1e78] [cursor=pointer]
+        - button "Notifications, 0 unread" [ref=f1e82] [cursor=pointer]
+        - button "Open context panel" [ref=f1e85] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f1e88]: Marketing Lead
+    - generic [ref=f1e97]:
+      - generic [ref=f1e99]:
+        - heading "The agent flagged this request" [level=1] [ref=f1e258]
+        - paragraph [ref=f1e101]: It proposes and flags — a human decides. Nothing was routed.
+      - generic [ref=f1e259]:
+        - generic [ref=f1e260]:
+          - paragraph [ref=f1e261]: Escalated · duplicate_disputed
+          - paragraph [ref=f1e262]: Routed to a human queue for a decision. Adjust the request (topic, dates, scope) and start again, or resolve it from the Live agents screen.
+        - generic [ref=f1e265]:
+          - generic [ref=f1e266]:
+            - generic [ref=f1e267]: 12:51:40
+            - generic [ref=f1e268]: Request received by Campaign Identification
+          - generic [ref=f1e269]:
+            - generic [ref=f1e270]: 12:51:40
+            - generic [ref=f1e271]: Business Capability config loaded
+          - generic [ref=f1e272]:
+            - generic [ref=f1e273]: 12:51:43
+            - generic [ref=f1e274]: Fields extracted from your words (quoted provenance)
+            - generic [ref=f1e275]: gpt-5.4-nano-2026-03-17 · 1226→196 tok · $0.000201 · 3740ms
+          - generic [ref=f1e276]:
+            - generic [ref=f1e277]: 12:51:43
+            - generic [ref=f1e278]: "Policy pass: escalate (completeness 0.6364)"
+          - generic [ref=f1e279]:
+            - generic [ref=f1e280]: 12:51:43
+            - generic [ref=f1e281]: "Decision (L2): request_gaps · confidence 1"
+          - generic [ref=f1e282]:
+            - generic [ref=f1e283]: 12:51:46
+            - generic [ref=f1e284]: "Escalated (tier 1): policy_gap → requester"
+            - generic [ref=f1e285]: gpt-5.4-nano-2026-03-17 · 1512→146 tok
+          - generic [ref=f1e286]:
+            - generic [ref=f1e287]: 12:56:26
+            - generic [ref=f1e288]: "Human gate: modified by requester"
+          - generic [ref=f1e289]:
+            - generic [ref=f1e290]: 12:56:26
+            - generic [ref=f1e291]: Business Capability config loaded
+          - generic [ref=f1e292]:
+            - generic [ref=f1e293]: 12:56:26
+            - generic [ref=f1e294]: "Policy pass: escalate (completeness 1)"
+          - generic [ref=f1e295]:
+            - generic [ref=f1e296]: 12:56:26
+            - generic [ref=f1e297]: "Decision (L2): flag_duplicate · confidence 1"
+          - generic [ref=f1e298]:
+            - generic [ref=f1e299]: 12:56:26
+            - generic [ref=f1e300]: "Escalated (tier 2): policy_gap → marketing-lead-queue"
+        - generic [ref=f1e301]:
+          - button "Start a new request" [ref=f1e302] [cursor=pointer]
+          - button "Open Live agents" [ref=f1e303] [cursor=pointer]

@@ -1,0 +1,82 @@
+- main [ref=e23]:
+  - complementary [ref=e24]:
+    - generic [ref=e25]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=e26] [cursor=pointer]:
+        - img "ShiftAI" [ref=e28]
+        - generic [ref=e29]:
+          - strong [ref=e30]: ShiftAI
+          - generic [ref=e31]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=e32] [cursor=pointer]
+    - navigation "Primary navigation" [ref=e35]:
+      - paragraph [ref=e36]: Workspace
+      - button "Home" [ref=e37] [cursor=pointer]
+      - button "Campaigns" [ref=e42] [cursor=pointer]
+      - button "Agents" [ref=e47] [cursor=pointer]
+      - button "Approvals" [ref=e52] [cursor=pointer]
+      - button "Package library" [ref=e57] [cursor=pointer]
+      - button "Insights" [ref=e62] [cursor=pointer]
+      - button "Activity" [ref=e67] [cursor=pointer]
+    - generic [ref=e72]:
+      - button "Agent workflow" [ref=e73] [cursor=pointer]
+      - group [ref=e78]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=e79] [cursor=pointer]:
+          - generic [ref=e80]: RP
+          - generic [ref=e81]:
+            - strong [ref=e82]: Rishi Patel
+            - generic [ref=e83]: Marketing Lead
+  - generic [ref=e86]:
+    - generic [ref=e87]:
+      - generic [ref=e89]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=e92]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=e93] [cursor=pointer]
+        - generic [ref=e96]: ⌘K
+      - generic [ref=e97]:
+        - button "How this demo works" [ref=e98] [cursor=pointer]
+        - button "Notifications, 0 unread" [ref=e102] [cursor=pointer]
+        - button "Open context panel" [ref=e105] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=e108]: Marketing Lead
+    - generic [ref=e109]:
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - paragraph [ref=e112]: Thursday 3 September · Marketing Lead
+          - heading "Good afternoon, Rishi" [level=1] [ref=e113]
+          - paragraph [ref=e114]: Here's what needs your attention across Marketing.
+        - generic [ref=e115]:
+          - button "New campaign request" [ref=e116] [cursor=pointer]
+          - button "View agent workflow" [ref=e119] [cursor=pointer]
+      - region "Campaign KPIs" [ref=e122]:
+        - button "Agent-executed 0% 0 of 0 activities" [ref=e123] [cursor=pointer]:
+          - paragraph [ref=e124]: Agent-executed
+          - strong [ref=e125]: 0%
+          - generic [ref=e126]: 0 of 0 activities
+        - button "First-pass approval 0% 0 of 0 runs, no blocking findings" [ref=e127] [cursor=pointer]:
+          - paragraph [ref=e128]: First-pass approval
+          - strong [ref=e129]: 0%
+          - generic [ref=e130]: 0 of 0 runs, no blocking findings
+        - button "Cycle time saved 0h vs pilot manual baseline" [ref=e131] [cursor=pointer]:
+          - paragraph [ref=e132]: Cycle time saved
+          - strong [ref=e133]: 0h
+          - generic [ref=e134]: vs pilot manual baseline
+        - button "AI cost / campaign $0.00 Across 0 campaigns in production" [ref=e135] [cursor=pointer]:
+          - paragraph [ref=e136]: AI cost / campaign
+          - strong [ref=e137]: $0.00
+          - generic [ref=e138]: Across 0 campaigns in production
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - heading "Needs you" [level=2] [ref=e141]
+          - paragraph [ref=e142]: "Your gate: Content decisions (step 05)"
+        - button "View all" [ref=e143] [cursor=pointer]
+      - generic [ref=e146]:
+        - heading "Nothing needs you right now" [level=3] [ref=e147]
+        - paragraph [ref=e148]: Agents are executing. New decisions will appear here and in your notifications.
+      - generic [ref=e149]:
+        - generic [ref=e150]:
+          - heading "In flight" [level=2] [ref=e151]
+          - paragraph [ref=e152]: Campaigns moving through the workflow
+        - button "View campaigns" [ref=e153] [cursor=pointer]
+      - generic [ref=e157]:
+        - generic [ref=e158]:
+          - heading "Just happened" [level=2] [ref=e159]
+          - paragraph [ref=e160]: Latest telemetry, click any line for the full trace
+        - button "Open activity log" [ref=e161] [cursor=pointer]

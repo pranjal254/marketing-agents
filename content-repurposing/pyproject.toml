@@ -3,27 +3,24 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "c2c-bridge"
+name = "content-repurposing-agent"
 version = "0.1.0"
-description = "Local dev bridge: exposes the Campaign Identification agent over HTTP + SSE for the Marketing Studio UI (plays Execution Studio's role in dev)"
+description = "LevelShift Content-to-Campaign Phase 1 — Agent 3: Content Repurposing Agent (flagship-first drafting + channel-native derivative fan-out)"
 requires-python = ">=3.12"
 dependencies = [
     "shiftai-shared>=0.1.0",
-    "campaign-identification-agent>=0.1.0",
     "campaign-in-a-box-agent>=0.1.0",
-    "content-repurposing-agent>=0.1.0",
-    "fastapi>=0.111",
-    "uvicorn>=0.30",
+    "pydantic>=2.7",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5", "httpx>=0.27"]
+dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-c2c_bridge = ["py.typed"]
+c2c_content_repurposing = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
@@ -37,7 +34,11 @@ python_version = "3.12"
 strict = true
 warn_unused_ignores = false
 mypy_path = "src"
-packages = ["c2c_bridge"]
+packages = ["c2c_content_repurposing"]
+
+[[tool.mypy.overrides]]
+module = ["docx", "docx.*", "jsonschema", "jsonschema.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

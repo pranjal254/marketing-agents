@@ -1,0 +1,44 @@
+- main [ref=f3e3]:
+  - complementary [ref=f3e4]:
+    - generic [ref=f3e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f3e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f3e8]
+        - generic [ref=f3e9]:
+          - strong [ref=f3e10]: ShiftAI
+          - generic [ref=f3e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f3e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f3e15]:
+      - paragraph [ref=f3e16]: Workspace
+      - button "Home" [ref=f3e17] [cursor=pointer]
+      - button "Campaigns" [ref=f3e22] [cursor=pointer]
+      - button "Agents" [ref=f3e27] [cursor=pointer]
+      - button "Approvals 1" [ref=f3e32] [cursor=pointer]:
+        - generic [ref=f3e36]: Approvals
+        - emphasis [ref=f3e37]: "1"
+      - button "Package library" [ref=f3e38] [cursor=pointer]
+      - button "Insights" [ref=f3e43] [cursor=pointer]
+      - button "Activity" [ref=f3e48] [cursor=pointer]
+    - generic [ref=f3e53]:
+      - button "Agent workflow" [ref=f3e54] [cursor=pointer]
+      - group [ref=f3e59]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f3e60] [cursor=pointer]:
+          - generic [ref=f3e61]: RP
+          - generic [ref=f3e62]:
+            - strong [ref=f3e63]: Rishi Patel
+            - generic [ref=f3e64]: Marketing Lead
+  - generic [ref=f3e67]:
+    - generic [ref=f3e68]:
+      - generic [ref=f3e70]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f3e73]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f3e74] [cursor=pointer]
+        - generic [ref=f3e77]: ⌘K
+      - generic [ref=f3e78]:
+        - button "How this demo works" [ref=f3e79] [cursor=pointer]
+        - button "Notifications, 2 unread" [ref=f3e83] [cursor=pointer]:
+          - generic [ref=f3e87]: "2"
+        - button "Open context panel" [ref=f3e88] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f3e91]: Marketing Lead
+    - status "Loading Marketing Studio" [ref=f3e92]:
+      - strong [ref=f3e96]: ShiftAI
+      - generic [ref=f3e97]: Marketing Studio

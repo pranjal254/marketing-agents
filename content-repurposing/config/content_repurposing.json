@@ -1,0 +1,79 @@
+{
+  "agentType": "decision",
+  "agentId": "content_repurposing",
+  "version": "0.1.0",
+  "recipeStatus": "0.1.0-draft — channel recipes verbatim from the Phase 1 spec source-to-derivative map; pending Marketing Lead sign-off",
+  "flagshipAssetType": "flagship_blog",
+  "maxRegenerations": 2,
+  "truncationRaiseFactor": 1.5,
+  "recipes": [
+    {
+      "assetType": "linkedin_posts",
+      "label": "LinkedIn posts (company + executive)",
+      "recipe": "Feed-native posts. Company variants open with a feed-native hook and carry the campaign hashtag; executive variants are first-person POV, deliberately less corporate. Short paragraphs, no link dumps.",
+      "mustNameBrand": false
+    },
+    {
+      "assetType": "email_touchpoints",
+      "label": "Email nurture snippets",
+      "recipe": "Hook + CTA sized for one nurture touchpoint each. Subject-line-ready opening, one idea per touchpoint, a single clear CTA.",
+      "mustNameBrand": false
+    },
+    {
+      "assetType": "battle_card",
+      "label": "Sales battle card extract",
+      "recipe": "Objection-ready summaries for ISR/Sales: objection, response grounded in a sourced claim, proof reference. Internal audience — direct and factual.",
+      "mustNameBrand": false
+    },
+    {
+      "assetType": "external_one_pager",
+      "label": "Executive one-pager",
+      "recipe": "Condensed leave-behind: the value proposition, three proof-backed reasons to act, and the decision-stage CTA. Executive reading level, no filler.",
+      "mustNameBrand": false
+    },
+    {
+      "assetType": "faq_service_page",
+      "label": "FAQ / AEO extract",
+      "recipe": "Direct Q&A formatted for AI-answer-engine extraction: each answer is self-contained, names LevelShift explicitly in answer-extractable text, and states the sourced fact plainly.",
+      "mustNameBrand": true
+    },
+    {
+      "assetType": "community_draft",
+      "label": "Community post draft",
+      "recipe": "Authentic, non-promotional community voice: share the insight as a practitioner would, invite discussion, no CTA and no sales framing.",
+      "mustNameBrand": false
+    },
+    {
+      "assetType": "call_scripts",
+      "label": "Call scripts",
+      "recipe": "Conversational opener, two discovery questions tied to persona pains, one sourced proof point per script, and a soft next step. Internal audience.",
+      "mustNameBrand": false
+    },
+    {
+      "assetType": "enablement_notes",
+      "label": "Sales enablement notes / service-page brief",
+      "recipe": "A discrete section brief for the existing service page plus enablement notes: what changed, which claims are approved for reuse, where each claim is sourced.",
+      "mustNameBrand": false
+    }
+  ],
+  "routingMap": [
+    { "reason": "unsourced_claim", "routesTo": "marketing-lead-queue" },
+    { "reason": "selfcheck_failed", "routesTo": "marketing-lead-queue" },
+    { "reason": "outline_divergence", "routesTo": "marketing-lead-queue" },
+    { "reason": "sequencing_violation", "routesTo": "aicoe-queue" },
+    { "reason": "workspace_failure", "routesTo": "aicoe-queue" },
+    { "reason": "tool_failure", "routesTo": "aicoe-queue" },
+    { "reason": "plan_not_ready", "routesTo": "marketing-lead-queue" }
+  ],
+  "reasonCodes": [
+    "unsourced_claim",
+    "selfcheck_failed",
+    "sequencing_violation",
+    "truncation_retry",
+    "outline_divergence",
+    "plan_not_ready",
+    "workspace_failure",
+    "tool_failure"
+  ],
+  "brandRulesVersion": "0.1.0-draft"
+}

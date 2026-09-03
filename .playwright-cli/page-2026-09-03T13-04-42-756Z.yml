@@ -1,0 +1,59 @@
+- main [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f2e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f2e8]
+        - generic [ref=f2e9]:
+          - strong [ref=f2e10]: ShiftAI
+          - generic [ref=f2e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f2e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f2e15]:
+      - paragraph [ref=f2e16]: Workspace
+      - button "Home" [ref=f2e17] [cursor=pointer]
+      - button "Campaigns" [ref=f2e22] [cursor=pointer]
+      - button "Agents" [ref=f2e27] [cursor=pointer]
+      - button "Approvals" [ref=f2e100] [cursor=pointer]
+      - button "Package library" [ref=f2e38] [cursor=pointer]
+      - button "Insights" [ref=f2e43] [cursor=pointer]
+      - button "Activity" [ref=f2e48] [cursor=pointer]
+    - generic [ref=f2e53]:
+      - button "Agent workflow" [ref=f2e54] [cursor=pointer]
+      - group [ref=f2e59]:
+        - generic "MW Marcus Webb BU Campaign Lead" [ref=f2e60] [cursor=pointer]:
+          - generic [ref=f2e61]: MW
+          - generic [ref=f2e62]:
+            - strong [ref=f2e63]: Marcus Webb
+            - generic [ref=f2e64]: BU Campaign Lead
+  - generic [ref=f2e67]:
+    - generic [ref=f2e68]:
+      - generic [ref=f2e70]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f2e73]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f2e74] [cursor=pointer]
+        - generic [ref=f2e77]: ⌘K
+      - generic [ref=f2e78]:
+        - button "How this demo works" [ref=f2e79] [cursor=pointer]
+        - button "Notifications, 1 unread" [ref=f2e83] [cursor=pointer]:
+          - generic [ref=f2e87]: "1"
+        - button "Open context panel" [ref=f2e88] [cursor=pointer]
+        - generic "Brief approval and final sign-off" [ref=f2e91]: BU Campaign Lead
+    - generic [ref=f2e101]:
+      - generic [ref=f2e103]:
+        - heading "Review with the full context" [level=1] [ref=f2e104]
+        - paragraph [ref=f2e105]: Every decision includes the asset, source lineage, rules and approval history. You are acting as Marcus Webb, BU Campaign Lead.
+      - generic [ref=f2e106]:
+        - complementary [ref=f2e107]:
+          - generic [ref=f2e108]:
+            - heading "My queue" [level=2] [ref=f2e109]
+            - generic [ref=f2e110]: 0 open
+          - generic [ref=f2e111]:
+            - paragraph [ref=f2e112]: No open tasks for Marcus Webb.
+            - paragraph [ref=f2e113]: Switch person via the profile menu to see other queues.
+        - generic [ref=f2e114]:
+          - heading "All clear" [level=3] [ref=f2e115]
+          - paragraph [ref=f2e116]: Nothing waits on Marcus Webb right now. Agents keep executing and new gates will land here.
+      - generic [ref=f2e117]:
+        - generic [ref=f2e118]:
+          - heading "Turnaround watch" [level=2] [ref=f2e119]
+          - paragraph [ref=f2e120]: Live from open review tasks. Reminders go out automatically at 50% and 90% of each review window; persistent stalls escalate to the Marketing Lead.
+        - paragraph [ref=f2e122]: No open reviews. New review tasks appear here with how much time remains.

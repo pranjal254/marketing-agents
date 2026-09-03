@@ -1,0 +1,147 @@
+- main [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f5e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f5e8]
+        - generic [ref=f5e9]:
+          - strong [ref=f5e10]: ShiftAI
+          - generic [ref=f5e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f5e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f5e15]:
+      - paragraph [ref=f5e16]: Workspace
+      - button "Home" [ref=f5e17] [cursor=pointer]
+      - button "Campaigns" [ref=f5e22] [cursor=pointer]
+      - button "Agents" [ref=f5e27] [cursor=pointer]
+      - button "Approvals" [ref=f5e32] [cursor=pointer]
+      - button "Package library" [ref=f5e37] [cursor=pointer]
+      - button "Insights" [ref=f5e42] [cursor=pointer]
+      - button "Activity" [ref=f5e47] [cursor=pointer]
+    - generic [ref=f5e52]:
+      - button "Agent workflow" [ref=f5e53] [cursor=pointer]
+      - group [ref=f5e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f5e59] [cursor=pointer]:
+          - generic [ref=f5e60]: RP
+          - generic [ref=f5e61]:
+            - strong [ref=f5e62]: Rishi Patel
+            - generic [ref=f5e63]: Marketing Lead
+  - generic [ref=f5e66]:
+    - generic [ref=f5e67]:
+      - generic [ref=f5e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f5e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f5e73] [cursor=pointer]
+        - generic [ref=f5e76]: ⌘K
+      - generic [ref=f5e77]:
+        - button "How this demo works" [ref=f5e78] [cursor=pointer]
+        - button "Notifications, 3 unread" [ref=f5e82] [cursor=pointer]:
+          - generic [ref=f5e86]: "3"
+        - button "Open context panel" [ref=f5e87] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f5e90]: Marketing Lead
+    - generic [ref=f5e99]:
+      - button "Campaigns Copilot readiness advisory offer" [ref=f5e100] [cursor=pointer]:
+        - text: Campaigns
+        - generic [ref=f5e103]: Copilot readiness advisory offer
+      - generic [ref=f5e104]:
+        - generic [ref=f5e105]:
+          - generic [ref=f5e106]: CO
+          - generic [ref=f5e107]:
+            - generic [ref=f5e108]:
+              - heading "Copilot readiness advisory offer" [level=1] [ref=f5e109]
+              - generic [ref=f5e110]: In production
+            - paragraph [ref=f5e111]: Financial Services demand generation · 2027-01-10 to 2027-03-20
+        - button "Copy summary" [ref=f5e113] [cursor=pointer]
+      - generic [ref=f5e114]:
+        - generic [ref=f5e115]:
+          - generic [ref=f5e116]: Journey progress
+          - strong [ref=f5e117]: 4 of 9 steps
+          - generic "3 of 9 campaign steps complete" [ref=f5e118]
+        - generic [ref=f5e128]:
+          - generic [ref=f5e129]: Content assets
+          - strong [ref=f5e130]: 6 registered
+          - generic [ref=f5e131]: From the Campaign-in-a-Box checklist
+        - generic [ref=f5e132]:
+          - generic [ref=f5e133]: Waiting on
+          - strong [ref=f5e134]: Agents executing
+          - generic [ref=f5e135]: No human gate open
+        - generic [ref=f5e136]:
+          - generic [ref=f5e137]: AI cost so far
+          - strong [ref=f5e138]: $0.00
+          - generic [ref=f5e139]: Within $6.00 envelope
+      - tablist [ref=f5e140]:
+        - tab "Journey" [ref=f5e141] [cursor=pointer]
+        - tab "Brief & plan" [ref=f5e142] [cursor=pointer]
+        - tab "Content production" [active] [selected] [ref=f5e143] [cursor=pointer]
+      - generic [ref=f5e292]:
+        - generic [ref=f5e293]:
+          - generic [ref=f5e294]:
+            - paragraph [ref=f5e295]: Production status · live agent
+            - heading "0 of 6 assets content-confirmed" [level=2] [ref=f5e296]
+          - generic [ref=f5e297]: in production
+        - generic [ref=f5e298]:
+          - generic [ref=f5e299]:
+            - generic [ref=f5e300]:
+              - paragraph [ref=f5e301]: Content drafting · live Content Repurposing agent · target claude-opus-5
+              - heading "Flagship staged — awaiting the writer's content confirmation" [level=2] [ref=f5e302]
+            - generic [ref=f5e303]: flagship staged
+          - paragraph [ref=f5e304]: "Gap notes (never filled with plausible content): Any additional factual detail about how teams typically rework scope/sequencing after governance checkpoints (not provided in verified proof points). · Specific definitions of governance artifacts, integration sequencing steps, and any Dynamics-specific readiness criteria (not provided in verified proof points). · Concrete deliverable names, workshop duration, and any quantified outcomes (not provided in verified proof points). · Examples of integration debt patterns and how they map to specific rollout steps (not provided in verified proof points). · +2 more"
+          - article [ref=f5e308]:
+            - generic [ref=f5e309]:
+              - generic [ref=f5e310]: v1
+              - strong [ref=f5e311]: "Copilot Readiness in Financial Services: A Governance-First Plan for Dynamics Teams"
+              - generic [ref=f5e312]: flagship blog
+            - paragraph [ref=f5e313]: 6 sections · 2 sourced claim markers · self-check passed (attempt 1)
+            - paragraph [ref=f5e314]: "Why “Copilot readiness” fails when governance is treated as an afterthought: Any additional factual detail about how teams typically rework scope/sequencing after governance checkpoints (not provided in verified proof points). · Define “ready” for Copilot: governance, integration, and rollout sequencing: Specific definitions of governance artifacts, integration sequencing steps, and any Dynamics-specific readiness criteria (not provided in verified proof points). · A governance-first readiness advisory: what we assess and what you get: Concrete deliverable names, workshop duration, and any quantified outcomes (not provided in verified proof points). · Integration-aware readiness: mapping legacy constraints to a practical rollout plan: Examples of integration debt patterns and how they map to specific rollout steps (not provided in verified proof points). · Cost-and-schedule clarity: turning constraints into measurable outcomes: Any measurable outcome statements (e.g., percentage reductions, time-to-plan improvements) (not provided in verified proof points). · What to bring to a readiness advisory workshop (and what you can expect next): Workshop agenda specifics and any confirmed next-step process details beyond the CTA (not provided in verified proof points)."
+            - generic [ref=f5e317]:
+              - link "Draft (.docx)" [ref=f5e318] [cursor=pointer]:
+                - /url: http://localhost:8788/api/box/documents?path=2027-Q1-copilot-readiness-adviso%2Fdrafts%2Fcopilot-readiness-adviso-flagship-blog-v1.docx
+              - button "Request rework" [ref=f5e323] [cursor=pointer]
+              - button "Confirm flagship content" [ref=f5e324] [cursor=pointer]
+        - generic [ref=f5e327]:
+          - article [ref=f5e328]:
+            - generic [ref=f5e329]:
+              - generic [ref=f5e330]: create
+              - strong [ref=f5e331]: Flagship blog (researched long-form)
+              - generic [ref=f5e332]: in production
+            - paragraph [ref=f5e333]: No candidate asset_ref of type flagship_blog is a strong fit for the Copilot readiness advisory offer in financial services + Dynamics. The only financial_services candidate is a docx labeled as a flagship blog but its business_unit is Data360 (not Dynamics) and the repository candidates provided do not include a Dynamics-specific Copilot readiness long-form. Therefore, creating a new researched long-form is required to meet the offer topic and business-unit alignment.
+            - button "Mark content-confirmed" [ref=f5e335] [cursor=pointer]
+          - article [ref=f5e338]:
+            - generic [ref=f5e339]:
+              - generic [ref=f5e340]: create
+              - strong [ref=f5e341]: Email touchpoint copy set
+              - generic [ref=f5e342]: in production
+            - paragraph [ref=f5e343]: No candidate asset_ref of type email_touchpoints exists in the provided repository candidates. The closest candidates are unrelated asset types (flagship_blog, faq_service_page, external_one_pager) and do not satisfy the required asset type. Therefore, creating the email touchpoint set is required.
+            - button "Mark content-confirmed" [ref=f5e345] [cursor=pointer]
+          - article [ref=f5e348]:
+            - generic [ref=f5e349]:
+              - generic [ref=f5e350]: create
+              - strong [ref=f5e351]: LinkedIn posts
+              - generic [ref=f5e352]: in production
+            - paragraph [ref=f5e353]: No candidate asset_ref of type linkedin_posts exists in the provided repository candidates. The provided candidates are other asset types, so they cannot be reused/adapted for this required asset type. Therefore, creating the LinkedIn post set is required.
+            - button "Mark content-confirmed" [ref=f5e355] [cursor=pointer]
+          - article [ref=f5e358]:
+            - generic [ref=f5e359]:
+              - generic [ref=f5e360]: adapt
+              - strong [ref=f5e361]: FAQ / service-page copy
+              - generic [ref=f5e362]: in production
+            - paragraph [ref=f5e363]: "A candidate of the correct asset type (faq_service_page) exists: asset_ref erp-modernization-faq.docx with fitness_score 0.5. While it is for manufacturing, it is the only strong same-type candidate and can be adapted into a Copilot readiness advisory FAQ for financial services + Dynamics. The adaptation will require rewriting all topic-specific content to match the Copilot readiness advisory offer."
+            - button "Mark content-confirmed" [ref=f5e365] [cursor=pointer]
+          - article [ref=f5e368]:
+            - generic [ref=f5e369]:
+              - generic [ref=f5e370]: create
+              - strong [ref=f5e371]: External one-pager
+              - generic [ref=f5e372]: in production
+            - paragraph [ref=f5e373]: No candidate asset_ref of type external_one_pager is provided that is both (a) financial_services and (b) aligned to the Copilot readiness advisory offer topic. The only external_one_pager candidate is erp-one-pager.docx (manufacturing). Adapting it would risk topic mismatch and would not satisfy the offer-topic requirement without substantial rewriting. Since the brief requires an external one-pager specifically for Copilot readiness advisory, creating a new one-pager is the safer option.
+            - button "Mark content-confirmed" [ref=f5e375] [cursor=pointer]
+          - article [ref=f5e378]:
+            - generic [ref=f5e379]:
+              - generic [ref=f5e380]: create
+              - strong [ref=f5e381]: Call scripts (internal)
+              - generic [ref=f5e382]: in production
+            - paragraph [ref=f5e383]: No candidate asset_ref of type call_scripts exists in the provided repository candidates. The available candidates are other asset types, so they cannot be reused/adapted for this required internal asset type. Therefore, creating the call scripts is required.
+            - button "Mark content-confirmed" [ref=f5e385] [cursor=pointer]
+        - paragraph [ref=f5e388]: "\"Mark content-confirmed\" is the dev stand-in for Agent 4's review cycle — it registers the REAL draft the Content Repurposing agent staged (with its claim lineage); the synthetic placeholder is used only for reuse assets Agent 3 doesn't draft. In production this record comes from the Content Collaboration agent."
+        - generic [ref=f5e389]:
+          - generic [ref=f5e390]:
+            - strong [ref=f5e391]: Deterministic packaging module
+            - generic [ref=f5e392]: No LLM — completeness diff, naming checks, sha256 snapshots. Blocks on any gap.
+          - button "Run packaging" [ref=f5e393] [cursor=pointer]

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from c2c_campaign_box import MODEL_ID as BOX_MODEL_ID
+from c2c_content_repurposing import MODEL_ID as REPURPOSE_MODEL_ID
 from campaign_identification import MODEL_ID
 from campaign_identification.approval import ApprovalGateError
 from campaign_identification.orchestration import AgentDeps, CampaignIdentificationAgent
@@ -49,6 +50,7 @@ from c2c_bridge.seed import seed_dev_workspace
 AGENTS_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = AGENTS_ROOT / "campaign-identification" / "config" / "campaign_identification.json"
 BOX_CONFIG_PATH = AGENTS_ROOT / "campaign-in-a-box" / "config" / "campaign_in_a_box.json"
+REPURPOSE_CONFIG_PATH = AGENTS_ROOT / "content-repurposing" / "config" / "content_repurposing.json"
 DEFAULT_WORKDIR = AGENTS_ROOT / "bridge" / ".bridge-run"
 DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
@@ -120,6 +122,28 @@ class Bridge:
                 rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
                 idempotency=idempotency,
                 config=box_config,
+                settings=settings,
+                brand_rules=load_brand_rules(),
+            )
+        )
+        # Agent 3 — shares the store, telemetry stream, kill switch and the SAME
+        # campaign workspace Agent 2 created (drafts land in {campaign}/drafts).
+        from c2c_content_repurposing.agent_config import load_repurposing_config
+        from c2c_content_repurposing.orchestration import (
+            ContentRepurposingAgent,
+            RepurposingDeps,
+        )
+
+        self.repurposer = ContentRepurposingAgent(
+            RepurposingDeps(
+                provider=build_provider(settings),
+                store=self.store,
+                workspace=LocalCampaignWorkspace(str(self.box_workspace_dir)),
+                sink=sink,
+                kill_switch=self.kill_switch,
+                rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
+                idempotency=idempotency,
+                config=load_repurposing_config(REPURPOSE_CONFIG_PATH),
                 settings=settings,
                 brand_rules=load_brand_rules(),
             )
@@ -290,6 +314,17 @@ def create_app(
                     else "intel_library_only"
                 ),
             },
+            "repurposing": {
+                "agent_id": bridge().repurposer.deps.config.agent_id,
+                "agent_name": "Content Repurposing Agent",
+                "config_version": bridge().repurposer.deps.config.version,
+                "model": REPURPOSE_MODEL_ID,
+                "recipe_status": bridge().repurposer.deps.config.recipe_status,
+                "recipes": [
+                    r.model_dump() for r in bridge().repurposer.deps.config.recipes
+                ],
+                "reason_codes": bridge().repurposer.deps.config.reason_codes,
+            },
         }
 
     # ------------------------------------------------------------------ actions
@@ -363,6 +398,7 @@ def create_app(
         agent_ids = (
             bridge().agent.deps.config.agent_id,
             bridge().box.deps.config.agent_id,
+            bridge().repurposer.deps.config.agent_id,
         )
         for agent_id in agent_ids:
             if body.paused:
@@ -443,6 +479,11 @@ def create_app(
     from c2c_bridge.box_routes import register_box_routes
 
     register_box_routes(app, bridge)
+
+    # ---------------------------------------------- Agent 3: Content Repurposing
+    from c2c_bridge.repurpose_routes import register_repurpose_routes
+
+    register_repurpose_routes(app, bridge)
 
     return app
 

@@ -1,0 +1,185 @@
+- main [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f1e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f1e8]
+        - generic [ref=f1e9]:
+          - strong [ref=f1e10]: ShiftAI
+          - generic [ref=f1e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f1e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f1e15]:
+      - paragraph [ref=f1e16]: Workspace
+      - button "Home" [ref=f1e17] [cursor=pointer]
+      - button "Campaigns" [ref=f1e22] [cursor=pointer]
+      - button "Agents" [ref=f1e27] [cursor=pointer]
+      - button "Approvals" [ref=f1e32] [cursor=pointer]
+      - button "Package library" [ref=f1e37] [cursor=pointer]
+      - button "Insights" [ref=f1e42] [cursor=pointer]
+      - button "Activity" [ref=f1e47] [cursor=pointer]
+    - generic [ref=f1e52]:
+      - button "Agent workflow" [ref=f1e53] [cursor=pointer]
+      - group [ref=f1e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f1e59] [cursor=pointer]:
+          - generic [ref=f1e60]: RP
+          - generic [ref=f1e61]:
+            - strong [ref=f1e62]: Rishi Patel
+            - generic [ref=f1e63]: Marketing Lead
+  - generic [ref=f1e66]:
+    - generic [ref=f1e67]:
+      - generic [ref=f1e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f1e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f1e73] [cursor=pointer]
+        - generic [ref=f1e76]: ⌘K
+      - generic [ref=f1e77]:
+        - button "How this demo works" [ref=f1e78] [cursor=pointer]
+        - button "Notifications, 0 unread" [ref=f1e82] [cursor=pointer]
+        - button "Open context panel" [ref=f1e85] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f1e88]: Marketing Lead
+    - generic [ref=f1e97]:
+      - generic [ref=f1e98]:
+        - generic [ref=f1e99]:
+          - heading "Review the drafted brief" [level=1] [ref=f1e127]
+          - paragraph [ref=f1e101]: Drafted by the live agent from your request. Fields it derived carry your own words as provenance; amber fields are never inferred. Iterate, fill, then send.
+        - generic [ref=f1e128]: Case case_73fe0e5 · gaps open
+      - generic [ref=f1e129]:
+        - generic [ref=f1e130]:
+          - paragraph [ref=f1e131]: Dynamics · Manufacturing
+          - generic [ref=f1e132]:
+            - generic [ref=f1e133]:
+              - generic [ref=f1e134]:
+                - generic [ref=f1e135]: Objective
+                - generic [ref=f1e136]: Agent-derived
+              - textbox "Objective" [ref=f1e137]: Launch a demand generation campaign for our ERP modernization assessment offer
+              - generic [ref=f1e138]: "\"Launch a demand generation campaign for our ERP modernization assessment offer\""
+            - generic [ref=f1e139]:
+              - generic [ref=f1e140]:
+                - generic [ref=f1e141]: Offer or topic
+                - generic [ref=f1e142]: Agent-derived
+              - textbox "Offer or topic" [ref=f1e143]: ERP modernization assessment offer
+            - generic [ref=f1e144]:
+              - generic [ref=f1e145]:
+                - generic [ref=f1e146]: Business unit
+                - generic [ref=f1e147]: Agent-derived
+              - combobox "Business unit" [ref=f1e148]: Dynamics
+            - generic [ref=f1e149]:
+              - generic [ref=f1e150]:
+                - generic [ref=f1e151]: Vertical
+                - generic [ref=f1e152]: Agent-derived
+              - combobox "Vertical" [ref=f1e153]:
+                - option "Select…"
+                - option "Financial Services"
+                - option "Manufacturing" [selected]
+                - option "Technology"
+            - generic [ref=f1e154]:
+              - generic [ref=f1e155]: Target segment
+              - combobox "Target segment" [ref=f1e158]:
+                - option "Select…"
+                - option "Type 3" [selected]
+                - option "Type 4"
+                - option "Standard"
+            - generic [ref=f1e159]:
+              - generic [ref=f1e160]:
+                - generic [ref=f1e161]: Budget approved
+                - generic [ref=f1e162]: Never inferred
+              - combobox "Budget approved" [ref=f1e163]:
+                - option "Select…" [selected]
+                - option "Yes"
+                - option "No"
+            - generic [ref=f1e164]:
+              - generic [ref=f1e165]:
+                - generic [ref=f1e166]: Window start
+                - generic [ref=f1e167]: You provide
+              - textbox "Window start" [ref=f1e168]
+            - generic [ref=f1e169]:
+              - generic [ref=f1e170]:
+                - generic [ref=f1e171]: Window end
+                - generic [ref=f1e172]: You provide
+              - textbox "Window end" [ref=f1e173]
+            - group [ref=f1e174]:
+              - generic [ref=f1e175]:
+                - generic [ref=f1e176]: Channels
+                - generic [ref=f1e177]: Agent-derived
+              - generic [ref=f1e178]:
+                - generic [ref=f1e179] [cursor=pointer]:
+                  - checkbox "LinkedIn" [ref=f1e180]
+                  - text: LinkedIn
+                - generic [ref=f1e181] [cursor=pointer]:
+                  - checkbox "Email nurture" [checked] [ref=f1e182]
+                  - text: Email nurture
+                - generic [ref=f1e183] [cursor=pointer]:
+                  - checkbox "Sales enablement" [ref=f1e184]
+                  - text: Sales enablement
+                - generic [ref=f1e185] [cursor=pointer]:
+                  - checkbox "Web / service page" [ref=f1e186]
+                  - text: Web / service page
+                - generic [ref=f1e187] [cursor=pointer]:
+                  - checkbox "Community" [ref=f1e188]
+                  - text: Community
+                - generic [ref=f1e189] [cursor=pointer]:
+                  - checkbox "Event" [checked] [ref=f1e190]
+                  - text: Event
+          - generic [ref=f1e191]:
+            - generic [ref=f1e192]:
+              - generic [ref=f1e193]: 12:51:40
+              - generic [ref=f1e194]: Request received by Campaign Identification
+            - generic [ref=f1e195]:
+              - generic [ref=f1e196]: 12:51:40
+              - generic [ref=f1e197]: Business Capability config loaded
+            - generic [ref=f1e198]:
+              - generic [ref=f1e199]: 12:51:43
+              - generic [ref=f1e200]: Fields extracted from your words (quoted provenance)
+              - generic [ref=f1e201]: gpt-5.4-nano-2026-03-17 · 1226→196 tok · $0.000201 · 3740ms
+            - generic [ref=f1e202]:
+              - generic [ref=f1e203]: 12:51:43
+              - generic [ref=f1e204]: "Policy pass: escalate (completeness 0.6364)"
+            - generic [ref=f1e205]:
+              - generic [ref=f1e206]: 12:51:43
+              - generic [ref=f1e207]: "Decision (L2): request_gaps · confidence 1"
+            - generic [ref=f1e208]:
+              - generic [ref=f1e209]: 12:51:46
+              - generic [ref=f1e210]: "Escalated (tier 1): policy_gap → requester"
+              - generic [ref=f1e211]: gpt-5.4-nano-2026-03-17 · 1512→146 tok
+        - complementary [ref=f1e212]:
+          - generic [ref=f1e213]:
+            - generic [ref=f1e214]:
+              - generic [ref=f1e215]: CI
+              - generic [ref=f1e216]:
+                - strong [ref=f1e217]: Directive to Campaign Identification
+                - generic [ref=f1e218]: The real agent redrafts the two lines below; every round is recorded with your identity
+            - generic [ref=f1e219]:
+              - generic [ref=f1e220]: Current draft — what the agent will redraft
+              - paragraph [ref=f1e221]:
+                - strong [ref=f1e222]: "Objective:"
+                - text: Launch a demand generation campaign for our ERP modernization assessment offer
+              - paragraph [ref=f1e223]:
+                - strong [ref=f1e224]: "Offer / topic:"
+                - text: ERP modernization assessment offer
+            - generic [ref=f1e225]:
+              - paragraph [ref=f1e226]: What should change?
+              - generic [ref=f1e227]:
+                - button "Executive angle" [ref=f1e228] [cursor=pointer]
+                - button "Practical angle" [ref=f1e229] [cursor=pointer]
+                - button "Tighter objective" [ref=f1e230] [cursor=pointer]
+                - button "Stronger offer" [ref=f1e231] [cursor=pointer]
+            - generic [ref=f1e232]:
+              - generic [ref=f1e233]: Instruction (type or dictate)
+              - generic [ref=f1e234]:
+                - textbox "Instruction (type or dictate)" [ref=f1e235]:
+                  - /placeholder: e.g. lead with the executive outcome
+                - button "Dictate with your voice" [ref=f1e236] [cursor=pointer]
+            - generic [ref=f1e239]:
+              - generic [ref=f1e240]: The agent redrafts; you decide when it leaves this page.
+              - button "Send directive" [ref=f1e241] [cursor=pointer]
+          - generic [ref=f1e244]:
+            - heading "Your request" [level=2] [ref=f1e245]
+            - paragraph [ref=f1e246]: "\"Launch a demand generation campaign for our ERP modernization assessment offer targeting manufacturing companies, Dynamics business unit, type_3 accounts, events plus email, running 2026-10-01 to 2026-12-15, owner rishi.patel@levelshift.com, budget approved\""
+            - paragraph [ref=f1e247]: Parsed by the live Campaign Identification agent · gap round 1
+          - generic [ref=f1e248]:
+            - heading "Send for approval" [level=2] [ref=f1e249]
+            - paragraph [ref=f1e250]:
+              - text: "Before this reaches the BU Campaign Lead:"
+              - strong [ref=f1e251]: Window start · Window end · Budget status
+              - text: . The agent never infers these.
+            - button "Send for approval" [disabled] [ref=f1e252]
+            - button "Start over (draft stays archived with the agent)" [ref=f1e255] [cursor=pointer]

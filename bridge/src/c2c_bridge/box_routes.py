@@ -132,13 +132,31 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
 
     @app.post("/api/box/campaigns/{campaign_id}/assets/{asset_id}/confirm")
     def confirm_asset(campaign_id: str, asset_id: str, body: AssetConfirmIn) -> dict[str, Any]:
+        """Content-confirm one checklist asset (the human decision Agent 4 will
+        carry in production). When Agent 3 has staged a real draft for the asset,
+        its ACTUAL bytes + claim lineage are registered; the synthetic document is
+        only a fallback for assets Agent 3 does not draft (e.g. reuse decisions)."""
+        from c2c_content_repurposing import persistence as rp_db
+
         case = box_db.load_plan_case(store(), campaign_id) or {}
         slug = str(case.get("campaign_slug", "campaign"))
         prior = [
-            a for a in box_db.load_registered_assets(store(), campaign_id)
+            a.version for a in box_db.load_registered_assets(store(), campaign_id)
             if a.asset_id == asset_id
         ]
-        version = (max(a.version for a in prior) + 1) if prior else 1
+        content = _asset_docx(asset_id, body.text)
+        claim_refs = list(body.claim_refs)
+        staged = rp_db.latest_draft(store(), campaign_id, asset_id)
+        draft_version = 0
+        if staged is not None and staged.status == "staged" and staged.file_ref:
+            content = bridge().repurposer.deps.workspace.download(staged.file_ref)
+            draft_version = staged.version
+            claim_refs = claim_refs or staged.claim_lineage or [
+                m.source_ref for m in staged.claim_markers
+            ]
+        # The confirmed copy versions PAST both prior registrations and Agent 3's
+        # staged drafts, so its canonical filename never collides in drafts/.
+        version = max([*prior, draft_version, 0]) + 1
         filename = f"{slug}-{asset_id.replace('_', '-')}-v{version}.docx"
         try:
             with bridge().run_lock:
@@ -146,10 +164,11 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
                     campaign_id,
                     asset_id,
                     filename=filename,
-                    content=_asset_docx(asset_id, body.text),
+                    content=content,
                     actor_id=body.actor_id,
                     actor_role=body.actor_role,
-                    claim_refs=body.claim_refs,
+                    claim_refs=claim_refs,
+                    version=version,
                 )
         except PlanGateError as exc:
             raise _gate_error(exc) from exc

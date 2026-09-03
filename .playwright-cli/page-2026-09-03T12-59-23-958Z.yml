@@ -1,0 +1,185 @@
+- main [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f1e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f1e8]
+        - generic [ref=f1e9]:
+          - strong [ref=f1e10]: ShiftAI
+          - generic [ref=f1e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f1e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f1e15]:
+      - paragraph [ref=f1e16]: Workspace
+      - button "Home" [ref=f1e17] [cursor=pointer]
+      - button "Campaigns" [ref=f1e22] [cursor=pointer]
+      - button "Agents" [ref=f1e27] [cursor=pointer]
+      - button "Approvals" [ref=f1e32] [cursor=pointer]
+      - button "Package library" [ref=f1e37] [cursor=pointer]
+      - button "Insights" [ref=f1e42] [cursor=pointer]
+      - button "Activity" [ref=f1e47] [cursor=pointer]
+    - generic [ref=f1e52]:
+      - button "Agent workflow" [ref=f1e53] [cursor=pointer]
+      - group [ref=f1e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f1e59] [cursor=pointer]:
+          - generic [ref=f1e60]: RP
+          - generic [ref=f1e61]:
+            - strong [ref=f1e62]: Rishi Patel
+            - generic [ref=f1e63]: Marketing Lead
+  - generic [ref=f1e66]:
+    - generic [ref=f1e67]:
+      - generic [ref=f1e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f1e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f1e73] [cursor=pointer]
+        - generic [ref=f1e76]: ⌘K
+      - generic [ref=f1e77]:
+        - button "How this demo works" [ref=f1e78] [cursor=pointer]
+        - button "Notifications, 0 unread" [ref=f1e82] [cursor=pointer]
+        - button "Open context panel" [ref=f1e85] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f1e88]: Marketing Lead
+    - generic [ref=f1e97]:
+      - generic [ref=f1e98]:
+        - generic [ref=f1e99]:
+          - heading "Review the drafted brief" [level=1] [ref=f1e327]
+          - paragraph [ref=f1e101]: Drafted by the live agent from your request. Fields it derived carry your own words as provenance; amber fields are never inferred. Iterate, fill, then send.
+        - generic [ref=f1e328]: Case case_5bdacc4 · gaps open
+      - generic [ref=f1e329]:
+        - generic [ref=f1e330]:
+          - paragraph [ref=f1e331]: Dynamics · Vertical not set
+          - generic [ref=f1e332]:
+            - generic [ref=f1e333]:
+              - generic [ref=f1e334]:
+                - generic [ref=f1e335]: Objective
+                - generic [ref=f1e336]: Agent-derived
+              - textbox "Objective" [ref=f1e337]: Launch an awareness campaign for our Copilot readiness advisory offer
+              - generic [ref=f1e338]: "\"Launch an awareness campaign for our Copilot readiness advisory offer\""
+            - generic [ref=f1e339]:
+              - generic [ref=f1e340]:
+                - generic [ref=f1e341]: Offer or topic
+                - generic [ref=f1e342]: Agent-derived
+              - textbox "Offer or topic" [ref=f1e343]: Copilot readiness advisory offer
+            - generic [ref=f1e344]:
+              - generic [ref=f1e345]:
+                - generic [ref=f1e346]: Business unit
+                - generic [ref=f1e347]: Agent-derived
+              - combobox "Business unit" [ref=f1e348]: Dynamics
+            - generic [ref=f1e349]:
+              - generic [ref=f1e350]:
+                - generic [ref=f1e351]: Vertical
+                - generic [ref=f1e352]: You provide
+              - combobox "Vertical" [ref=f1e353]:
+                - option "Select…" [selected]
+                - option "Financial Services"
+                - option "Manufacturing"
+                - option "Technology"
+            - generic [ref=f1e354]:
+              - generic [ref=f1e355]: Target segment
+              - combobox "Target segment" [ref=f1e357]:
+                - option "Select…"
+                - option "Type 3"
+                - option "Type 4" [selected]
+                - option "Standard"
+            - generic [ref=f1e358]:
+              - generic [ref=f1e359]:
+                - generic [ref=f1e360]: Budget approved
+                - generic [ref=f1e361]: Never inferred
+              - combobox "Budget approved" [ref=f1e362]:
+                - option "Select…" [selected]
+                - option "Yes"
+                - option "No"
+            - generic [ref=f1e363]:
+              - generic [ref=f1e364]:
+                - generic [ref=f1e365]: Window start
+                - generic [ref=f1e366]: You provide
+              - textbox "Window start" [ref=f1e367]
+            - generic [ref=f1e368]:
+              - generic [ref=f1e369]:
+                - generic [ref=f1e370]: Window end
+                - generic [ref=f1e371]: You provide
+              - textbox "Window end" [ref=f1e372]
+            - group [ref=f1e373]:
+              - generic [ref=f1e374]:
+                - generic [ref=f1e375]: Channels
+                - generic [ref=f1e376]: Agent-derived
+              - generic [ref=f1e377]:
+                - generic [ref=f1e378] [cursor=pointer]:
+                  - checkbox "LinkedIn" [ref=f1e379]
+                  - text: LinkedIn
+                - generic [ref=f1e380] [cursor=pointer]:
+                  - checkbox "Email nurture" [checked] [ref=f1e381]
+                  - text: Email nurture
+                - generic [ref=f1e382] [cursor=pointer]:
+                  - checkbox "Sales enablement" [ref=f1e383]
+                  - text: Sales enablement
+                - generic [ref=f1e384] [cursor=pointer]:
+                  - checkbox "Web / service page" [ref=f1e385]
+                  - text: Web / service page
+                - generic [ref=f1e386] [cursor=pointer]:
+                  - checkbox "Community" [ref=f1e387]
+                  - text: Community
+                - generic [ref=f1e388] [cursor=pointer]:
+                  - checkbox "Event" [checked] [ref=f1e389]
+                  - text: Event
+          - generic [ref=f1e390]:
+            - generic [ref=f1e391]:
+              - generic [ref=f1e392]: 12:57:55
+              - generic [ref=f1e393]: Request received by Campaign Identification
+            - generic [ref=f1e394]:
+              - generic [ref=f1e395]: 12:57:55
+              - generic [ref=f1e396]: Business Capability config loaded
+            - generic [ref=f1e397]:
+              - generic [ref=f1e398]: 12:57:59
+              - generic [ref=f1e399]: Fields extracted from your words (quoted provenance)
+              - generic [ref=f1e400]: gpt-5.4-nano-2026-03-17 · 1227→207 tok · $0.000206 · 3436ms
+            - generic [ref=f1e401]:
+              - generic [ref=f1e402]: 12:57:59
+              - generic [ref=f1e403]: "Policy pass: escalate (completeness 0.5455)"
+            - generic [ref=f1e404]:
+              - generic [ref=f1e405]: 12:57:59
+              - generic [ref=f1e406]: "Decision (L2): request_gaps · confidence 1"
+            - generic [ref=f1e407]:
+              - generic [ref=f1e408]: 12:58:02
+              - generic [ref=f1e409]: "Escalated (tier 1): policy_gap → requester"
+              - generic [ref=f1e410]: gpt-5.4-nano-2026-03-17 · 1542→181 tok
+        - complementary [ref=f1e411]:
+          - generic [ref=f1e412]:
+            - generic [ref=f1e413]:
+              - generic [ref=f1e414]: CI
+              - generic [ref=f1e415]:
+                - strong [ref=f1e416]: Directive to Campaign Identification
+                - generic [ref=f1e417]: The real agent redrafts the two lines below; every round is recorded with your identity
+            - generic [ref=f1e418]:
+              - generic [ref=f1e419]: Current draft — what the agent will redraft
+              - paragraph [ref=f1e420]:
+                - strong [ref=f1e421]: "Objective:"
+                - text: Launch an awareness campaign for our Copilot readiness advisory offer
+              - paragraph [ref=f1e422]:
+                - strong [ref=f1e423]: "Offer / topic:"
+                - text: Copilot readiness advisory offer
+            - generic [ref=f1e424]:
+              - paragraph [ref=f1e425]: What should change?
+              - generic [ref=f1e426]:
+                - button "Executive angle" [ref=f1e427] [cursor=pointer]
+                - button "Practical angle" [ref=f1e428] [cursor=pointer]
+                - button "Tighter objective" [ref=f1e429] [cursor=pointer]
+                - button "Stronger offer" [ref=f1e430] [cursor=pointer]
+            - generic [ref=f1e431]:
+              - generic [ref=f1e432]: Instruction (type or dictate)
+              - generic [ref=f1e433]:
+                - textbox "Instruction (type or dictate)" [ref=f1e434]:
+                  - /placeholder: e.g. lead with the executive outcome
+                - button "Dictate with your voice" [ref=f1e435] [cursor=pointer]
+            - generic [ref=f1e438]:
+              - generic [ref=f1e439]: The agent redrafts; you decide when it leaves this page.
+              - button "Send directive" [ref=f1e440] [cursor=pointer]
+          - generic [ref=f1e443]:
+            - heading "Your request" [level=2] [ref=f1e444]
+            - paragraph [ref=f1e445]: "\"Launch an awareness campaign for our Copilot readiness advisory offer targeting retail finance leaders, Dynamics business unit, type_4 accounts, email and events, running 2027-01-10 to 2027-03-20, owner rishi.patel@levelshift.com, budget approved\""
+            - paragraph [ref=f1e446]: Parsed by the live Campaign Identification agent · gap round 1
+          - generic [ref=f1e447]:
+            - heading "Send for approval" [level=2] [ref=f1e448]
+            - paragraph [ref=f1e449]:
+              - text: "Before this reaches the BU Campaign Lead:"
+              - strong [ref=f1e450]: Vertical · Window start · Window end · Budget status
+              - text: . The agent never infers these.
+            - button "Send for approval" [disabled] [ref=f1e451]
+            - button "Start over (draft stays archived with the agent)" [ref=f1e454] [cursor=pointer]

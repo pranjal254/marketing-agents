@@ -1,0 +1,42 @@
+- main [ref=f6e3]:
+  - complementary [ref=f6e4]:
+    - generic [ref=f6e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f6e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f6e8]
+        - generic [ref=f6e9]:
+          - strong [ref=f6e10]: ShiftAI
+          - generic [ref=f6e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f6e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f6e15]:
+      - paragraph [ref=f6e16]: Workspace
+      - button "Home" [ref=f6e17] [cursor=pointer]
+      - button "Campaigns" [ref=f6e22] [cursor=pointer]
+      - button "Agents" [ref=f6e27] [cursor=pointer]
+      - button "Approvals" [ref=f6e32] [cursor=pointer]
+      - button "Package library" [ref=f6e37] [cursor=pointer]
+      - button "Insights" [ref=f6e42] [cursor=pointer]
+      - button "Activity" [ref=f6e47] [cursor=pointer]
+    - generic [ref=f6e52]:
+      - button "Agent workflow" [ref=f6e53] [cursor=pointer]
+      - group [ref=f6e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f6e59] [cursor=pointer]:
+          - generic [ref=f6e60]: RP
+          - generic [ref=f6e61]:
+            - strong [ref=f6e62]: Rishi Patel
+            - generic [ref=f6e63]: Marketing Lead
+  - generic [ref=f6e66]:
+    - generic [ref=f6e67]:
+      - generic [ref=f6e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f6e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f6e73] [cursor=pointer]
+        - generic [ref=f6e76]: ⌘K
+      - generic [ref=f6e77]:
+        - button "How this demo works" [ref=f6e78] [cursor=pointer]
+        - button "Notifications, 3 unread" [ref=f6e82] [cursor=pointer]:
+          - generic [ref=f6e86]: "3"
+        - button "Open context panel" [ref=f6e87] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f6e90]: Marketing Lead
+    - status "Loading Marketing Studio" [ref=f6e91]:
+      - strong [ref=f6e95]: ShiftAI
+      - generic [ref=f6e96]: Marketing Studio

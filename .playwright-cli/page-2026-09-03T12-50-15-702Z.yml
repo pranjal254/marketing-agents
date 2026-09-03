@@ -1,0 +1,41 @@
+- main [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - button "ShiftAI ShiftAI Marketing Studio" [ref=f1e6] [cursor=pointer]:
+        - img "ShiftAI" [ref=f1e8]
+        - generic [ref=f1e9]:
+          - strong [ref=f1e10]: ShiftAI
+          - generic [ref=f1e11]: Marketing Studio
+      - button "Collapse sidebar" [expanded] [ref=f1e12] [cursor=pointer]
+    - navigation "Primary navigation" [ref=f1e15]:
+      - paragraph [ref=f1e16]: Workspace
+      - button "Home" [ref=f1e17] [cursor=pointer]
+      - button "Campaigns" [ref=f1e22] [cursor=pointer]
+      - button "Agents" [ref=f1e27] [cursor=pointer]
+      - button "Approvals" [ref=f1e32] [cursor=pointer]
+      - button "Package library" [ref=f1e37] [cursor=pointer]
+      - button "Insights" [ref=f1e42] [cursor=pointer]
+      - button "Activity" [ref=f1e47] [cursor=pointer]
+    - generic [ref=f1e52]:
+      - button "Agent workflow" [ref=f1e53] [cursor=pointer]
+      - group [ref=f1e58]:
+        - generic "RP Rishi Patel Marketing Lead" [ref=f1e59] [cursor=pointer]:
+          - generic [ref=f1e60]: RP
+          - generic [ref=f1e61]:
+            - strong [ref=f1e62]: Rishi Patel
+            - generic [ref=f1e63]: Marketing Lead
+  - generic [ref=f1e66]:
+    - generic [ref=f1e67]:
+      - generic [ref=f1e69]:
+        - textbox "Ask the studio or search campaigns and tasks" [ref=f1e72]:
+          - /placeholder: Ask the studio or search…
+        - button "Dictate with your voice" [ref=f1e73] [cursor=pointer]
+        - generic [ref=f1e76]: ⌘K
+      - generic [ref=f1e77]:
+        - button "How this demo works" [ref=f1e78] [cursor=pointer]
+        - button "Notifications, 0 unread" [ref=f1e82] [cursor=pointer]
+        - button "Open context panel" [ref=f1e85] [cursor=pointer]
+        - generic "Content decisions (step 05)" [ref=f1e88]: Marketing Lead
+    - status "Loading Marketing Studio" [ref=f1e89]:
+      - strong [ref=f1e93]: ShiftAI
+      - generic [ref=f1e94]: Marketing Studio
