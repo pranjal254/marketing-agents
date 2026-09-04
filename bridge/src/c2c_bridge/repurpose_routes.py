@@ -76,57 +76,50 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
     @app.post("/api/box/campaigns/{campaign_id}/flagship")
     def draft_flagship(campaign_id: str, body: FlagshipIn) -> dict[str, Any]:
         """Flagship drafting, triggered on outline approval (plan confirmed).
-        The agent reuses the campaign's existing trace id for journey continuity."""
+        The agent reuses the campaign's existing trace id for journey continuity;
+        the staged draft immediately enters Agent 4's review cycle."""
+        from c2c_bridge.review_routes import stage_new_drafts
+
         try:
             with bridge().run_lock:
                 outcome = agent().draft_flagship(campaign_id)
+                stage_new_drafts(bridge, campaign_id)
         except RepurposeGateError as exc:
             raise _gate_error(exc) from exc
         return outcome.model_dump()
 
     @app.post("/api/box/campaigns/{campaign_id}/flagship/confirm")
     def confirm_flagship(campaign_id: str, body: FlagshipConfirmIn) -> dict[str, Any]:
-        """Human gate: content-confirm the flagship AND register it with the
-        Campaign-in-a-Box packaging registry using the REAL draft bytes + claim
-        lineage. Fan-out is a separate call — this stays fast."""
+        """The flagship content_confirmed gate — now Agent 4's: the review agent
+        records the identity-stamped decision; its signal binding unlocks Agent
+        3's fan-out and registers the REAL flagship bytes with packaging."""
+        from c2c_collaboration.models import ReviewState
+        from c2c_collaboration.orchestration import ReviewGateError
+
+        flagship_id = agent().deps.config.flagship_asset_type
         try:
             with bridge().run_lock:
-                outcome = agent().confirm_flagship(
-                    campaign_id, actor_id=body.actor_id,
-                    actor_role=body.actor_role, notes=body.notes,
+                state: ReviewState = bridge().collab.confirm_content(
+                    campaign_id, flagship_id,
+                    actor_id=body.actor_id, actor_role=body.actor_role,
                 )
-                draft = outcome.draft
-                if draft is not None and draft.file_ref:
-                    content = bridge().box.deps.workspace.download(draft.file_ref)
-                    prior = [
-                        a.version
-                        for a in box_db.load_registered_assets(store(), campaign_id)
-                        if a.asset_id == draft.asset_id
-                    ]
-                    # The confirmed copy versions past Agent 3's staged drafts so
-                    # its canonical filename never collides in drafts/.
-                    version = max([*prior, draft.version]) + 1
-                    case = box_db.load_plan_case(store(), campaign_id) or {}
-                    slug = str(case.get("campaign_slug", "campaign"))
-                    filename = f"{slug}-{draft.asset_id.replace('_', '-')}-v{version}.docx"
-                    bridge().box.register_confirmed_asset(
-                        campaign_id, draft.asset_id,
-                        filename=filename, content=content,
-                        actor_id=body.actor_id, actor_role=body.actor_role,
-                        claim_refs=[m.source_ref for m in draft.claim_markers],
-                        version=version,
-                    )
+        except ReviewGateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except RepurposeGateError as exc:
             raise _gate_error(exc) from exc
-        return outcome.model_dump()
+        return state.model_dump()
 
     @app.post("/api/box/campaigns/{campaign_id}/fanout")
     def run_fanout(campaign_id: str) -> dict[str, Any]:
         """Derivative fan-out — only possible after the human confirmation above
-        (the agent's state machine refuses anything else)."""
+        (the agent's state machine refuses anything else). Every staged
+        derivative enters Agent 4's review cycle."""
+        from c2c_bridge.review_routes import stage_new_drafts
+
         try:
             with bridge().run_lock:
                 outcome = agent().run_fanout(campaign_id)
+                stage_new_drafts(bridge, campaign_id)
         except SequencingViolationError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         except RepurposeGateError as exc:
@@ -135,6 +128,8 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
 
     @app.post("/api/box/campaigns/{campaign_id}/rework")
     def rework(campaign_id: str, body: ReworkIn) -> dict[str, Any]:
+        from c2c_bridge.review_routes import stage_new_drafts
+
         try:
             with bridge().run_lock:
                 outcome = agent().apply_rework(
@@ -142,6 +137,7 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
                     instruction=body.instruction, actor_id=body.actor_id,
                     actor_role=body.actor_role, rule_codes=body.rule_codes,
                 )
+                stage_new_drafts(bridge, campaign_id)
         except RepurposeGateError as exc:
             raise _gate_error(exc) from exc
         return outcome.model_dump()

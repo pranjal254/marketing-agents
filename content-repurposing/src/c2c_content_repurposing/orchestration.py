@@ -264,6 +264,17 @@ class ContentRepurposingAgent:
                 detail={"note": "every drafted section was stripped by grounding",
                         "gap_notes": [g.model_dump() for g in draft_gaps]},
             )
+        elif not markers:
+            # The draft survived but carries ZERO verified claim markers — legal
+            # (nothing invented) but a quality signal humans must see: the whole
+            # derivative fan-out would inherit an empty claim inventory.
+            escalations.append("unsourced_claim")
+            self._escalation_event(
+                ctx, tier=1, reason_code="unsourced_claim",
+                detail={"note": "flagship staged without any verified claim marker — "
+                                "derivatives would have no claim inventory; human "
+                                "review should add sourced proof points"},
+            )
         if not report.passed:
             escalations.append("selfcheck_failed")
             self._escalation_event(

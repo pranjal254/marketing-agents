@@ -15,11 +15,15 @@ COPY shared/ shared/
 COPY campaign-identification/ campaign-identification/
 COPY campaign-in-a-box/ campaign-in-a-box/
 COPY content-repurposing/ content-repurposing/
+COPY collaboration-iteration/ collaboration-iteration/
 COPY bridge/ bridge/
 COPY levelshift-agent-starter-kit/schemas/ levelshift-agent-starter-kit/schemas/
 
-RUN pip install --no-cache-dir -e ./shared -e ./campaign-identification \
-    -e ./campaign-in-a-box -e ./content-repurposing -e ./bridge
+# shared[postgres]: the Postgres Context Store binding ships in the image so
+# enabling it is purely an environment decision (set DATABASE_URL, no rebuild).
+RUN pip install --no-cache-dir -e "./shared[postgres]" -e ./campaign-identification \
+    -e ./campaign-in-a-box -e ./content-repurposing -e ./collaboration-iteration \
+    -e ./bridge
 
 ENV PYTHONUNBUFFERED=1 \
     STS_SCHEMA_PATH=/app/levelshift-agent-starter-kit/schemas/sts-core.schema.v2.0.0.json \

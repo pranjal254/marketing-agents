@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from c2c_campaign_box import MODEL_ID as BOX_MODEL_ID
+from c2c_collaboration import MODEL_ID as COLLAB_MODEL_ID
 from c2c_content_repurposing import MODEL_ID as REPURPOSE_MODEL_ID
 from campaign_identification import MODEL_ID
 from campaign_identification.approval import ApprovalGateError
@@ -38,10 +39,13 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from shiftai_shared.business_capability import load_decision_config
 from shiftai_shared.config import SharedSettings, load_settings
-from shiftai_shared.context_store import SqliteContextStore
+from shiftai_shared.context_store import (
+    build_context_store,
+    build_idempotency_store,
+    store_backend,
+)
 from shiftai_shared.control_plane import KillSwitch, RateBreaker
 from shiftai_shared.llm import build_provider
-from shiftai_shared.resilience import SqliteIdempotencyStore
 from shiftai_shared.telemetry import JsonlSink
 
 from c2c_bridge.bus import TeeSink, TelemetryBus
@@ -51,6 +55,9 @@ AGENTS_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = AGENTS_ROOT / "campaign-identification" / "config" / "campaign_identification.json"
 BOX_CONFIG_PATH = AGENTS_ROOT / "campaign-in-a-box" / "config" / "campaign_in_a_box.json"
 REPURPOSE_CONFIG_PATH = AGENTS_ROOT / "content-repurposing" / "config" / "content_repurposing.json"
+COLLAB_CONFIG_PATH = (
+    AGENTS_ROOT / "collaboration-iteration" / "config" / "collaboration_iteration.json"
+)
 DEFAULT_WORKDIR = AGENTS_ROOT / "bridge" / ".bridge-run"
 DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
@@ -76,11 +83,15 @@ class Bridge:
         self.workdir = workdir
         self.settings = settings
         self.bus = TelemetryBus()
-        self.store = SqliteContextStore(str(workdir / "context-store.sqlite"))
+        # Backend is an environment decision: DATABASE_URL set → tenant-scoped
+        # Postgres (state + idempotency survive restarts); unset → per-session
+        # SQLite exactly as before. Agents are unaware either way.
+        self.store_backend = store_backend(settings)
+        self.store = build_context_store(settings, str(workdir / "context-store.sqlite"))
         self.workspace_dir = workdir / "workspace"
         self.kill_switch = KillSwitch()
         sink = TeeSink(JsonlSink(str(workdir / "telemetry.jsonl")), self.bus)
-        idempotency = SqliteIdempotencyStore(str(workdir / "idempotency.sqlite"))
+        idempotency = build_idempotency_store(settings, str(workdir / "idempotency.sqlite"))
         config = load_decision_config(CONFIG_PATH)
         self.agent = CampaignIdentificationAgent(
             AgentDeps(
@@ -146,6 +157,30 @@ class Bridge:
                 config=load_repurposing_config(REPURPOSE_CONFIG_PATH),
                 settings=settings,
                 brand_rules=load_brand_rules(),
+            )
+        )
+        # Agent 4 — the review-cycle manager. Its outbound signals bind to the
+        # co-hosted agents (BridgeSignals): flagship confirm → Agent 3 fan-out
+        # unlock, derivative confirm → Agent 2 packaging registry, structural
+        # feedback → Agent 3 rework. The old dev stand-ins are retired.
+        from c2c_collaboration.agent_config import load_collaboration_config
+        from c2c_collaboration.orchestration import CollaborationAgent, CollaborationDeps
+
+        from c2c_bridge.signals import BridgeSignals
+
+        self.collab = CollaborationAgent(
+            CollaborationDeps(
+                provider=build_provider(settings),
+                store=self.store,
+                workspace=LocalCampaignWorkspace(str(self.box_workspace_dir)),
+                sink=sink,
+                kill_switch=self.kill_switch,
+                rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
+                idempotency=idempotency,
+                config=load_collaboration_config(COLLAB_CONFIG_PATH),
+                settings=settings,
+                brand_rules=load_brand_rules(),
+                signals=BridgeSignals(lambda: self),
             )
         )
         # One case at a time keeps SQLite happy and mirrors event-driven invocation.
@@ -278,6 +313,7 @@ def create_app(
             "config_version": bridge().agent.deps.config.version,
             "provider": bridge().settings.llm_provider,
             "model": MODEL_ID,
+            "store": bridge().store_backend,
             "environment": bridge().settings.shiftai_environment,
             "kill_switch": (
                 "paused"
@@ -324,6 +360,18 @@ def create_app(
                     r.model_dump() for r in bridge().repurposer.deps.config.recipes
                 ],
                 "reason_codes": bridge().repurposer.deps.config.reason_codes,
+            },
+            "collaboration": {
+                "agent_id": bridge().collab.deps.config.agent_id,
+                "agent_name": "Content Collaboration & Iteration Agent",
+                "config_version": bridge().collab.deps.config.version,
+                "model": COLLAB_MODEL_ID,
+                "reviewer_map_status": bridge().collab.deps.config.reviewer_map_status,
+                "reviewer_map": {
+                    gate: [s.model_dump() for s in slots]
+                    for gate, slots in bridge().collab.deps.config.reviewer_map.items()
+                },
+                "reason_codes": bridge().collab.deps.config.reason_codes,
             },
         }
 
@@ -399,6 +447,7 @@ def create_app(
             bridge().agent.deps.config.agent_id,
             bridge().box.deps.config.agent_id,
             bridge().repurposer.deps.config.agent_id,
+            bridge().collab.deps.config.agent_id,
         )
         for agent_id in agent_ids:
             if body.paused:
@@ -484,6 +533,11 @@ def create_app(
     from c2c_bridge.repurpose_routes import register_repurpose_routes
 
     register_repurpose_routes(app, bridge)
+
+    # -------------------------------------- Agent 4: Collaboration & Iteration
+    from c2c_bridge.review_routes import register_review_routes
+
+    register_review_routes(app, bridge)
 
     return app
 

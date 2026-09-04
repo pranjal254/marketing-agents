@@ -1,0 +1,41 @@
+{
+  "agentType": "decision",
+  "agentId": "collaboration_iteration",
+  "version": "0.1.0",
+  "reviewerMapStatus": "0.1.0-draft — reviewer roles per the spec's step 1 (editorial → Content Writer, message fit → Marketing Lead); pending Marketing Lead sign-off",
+  "flagshipAssetType": "flagship_blog",
+  "reviewerMap": {
+    "flagship": [
+      { "role": "content-writer", "focus": "editorial" },
+      { "role": "marketing-lead", "focus": "message_fit" }
+    ],
+    "derivative": [
+      { "role": "content-writer", "focus": "editorial" }
+    ]
+  },
+  "reminderLadder": {
+    "firstReminderBusinessDaysAfterDue": 0,
+    "secondReminderBusinessDaysAfterDue": 1,
+    "escalateBusinessDaysAfterDue": 2
+  },
+  "maxRoundsAlert": 3,
+  "routingMap": [
+    { "reason": "feedback_conflict", "routesTo": "marketing-lead-queue" },
+    { "reason": "unclassified_feedback", "routesTo": "marketing-lead-queue" },
+    { "reason": "sourced_claim_edit", "routesTo": "marketing-lead-queue" },
+    { "reason": "stalled_asset", "routesTo": "marketing-lead-queue" },
+    { "reason": "max_rounds_exceeded", "routesTo": "marketing-lead-queue" },
+    { "reason": "version_corruption", "routesTo": "aicoe-queue" },
+    { "reason": "tool_failure", "routesTo": "aicoe-queue" }
+  ],
+  "reasonCodes": [
+    "feedback_conflict",
+    "sourced_claim_edit",
+    "stalled_asset",
+    "max_rounds_exceeded",
+    "unclassified_feedback",
+    "version_corruption",
+    "tool_failure"
+  ],
+  "brandRulesVersion": "0.1.0-draft"
+}

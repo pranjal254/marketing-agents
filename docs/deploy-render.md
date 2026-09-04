@@ -64,3 +64,39 @@ managed identity · Anthropic API for the production Claude models · real
 OneDrive/SharePoint workspace via Graph (IT request pending) · SQLite → Azure
 Database for PostgreSQL behind the existing ContextStore protocol · telemetry
 into ShiftAI Execution Studio · Entra SSO in front · GitHub Actions CI/CD.
+
+## Durable state on Render (optional): Postgres
+
+The free-tier caveat above (state resets on every deploy/restart) disappears the
+moment `DATABASE_URL` is set — the bridge then binds the tenant-scoped Postgres
+Context Store + idempotency ledger instead of per-session SQLite. See
+`docs/data-model.md` for the full architecture (RLS tenancy, append-only
+enforcement, governance catalog, typed audit views).
+
+1. Create a free Postgres (Neon works well) and copy its connection string
+   (keep `sslmode=require`).
+2. Apply the schema once, from your machine:
+   `set DATABASE_URL=... && .venv\Scripts\python -m shiftai_shared.context_store.migrate`
+3. Add `DATABASE_URL` to the Render service env vars (paste in the dashboard
+   only — never in the repo) and redeploy. `/api/health` now reports
+   `"store": "postgres"`.
+
+Honest caveat: campaign *documents* still live on Render's ephemeral disk, so a
+restart keeps all metadata/state but loses workspace files — the agents detect
+the divergence (snapshot failures / hash-mismatch halts) rather than hiding it.
+Full durability arrives with the OneDrive binding.
+
+### Neon specifics (important)
+
+- **Use the DIRECT connection string, never the `-pooler` endpoint.** The pooled
+  endpoint runs PgBouncer in transaction mode, which shuffles sessions between
+  clients — our row-level-security tenant scoping is a session setting
+  (`app.tenant_id`) and MUST stay pinned to the connection. The bridge holds ~2
+  long-lived connections, so direct is also the right fit.
+- Pick Postgres 16+ (matches Azure Flexible Server; `security_invoker` views
+  need 15+). Free-tier autosuspend adds ~1s to the first query after idle — the
+  adapter's reconnect retry absorbs it.
+- Azure migration later: same migrations against the Azure DSN, swap
+  DATABASE_URL (Key Vault + managed identity per the production plan). Staging
+  data is disposable — prod starts clean; `pg_dump`/`pg_restore` exists if ever
+  needed (metadata only, tiny).

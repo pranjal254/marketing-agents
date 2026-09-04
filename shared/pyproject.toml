@@ -20,12 +20,15 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
+# Postgres Context Store binding (staging/prod). Agents never import psycopg;
+# only deployments that set DATABASE_URL install this extra.
+postgres = ["psycopg[binary]>=3.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-shiftai_shared = ["templates/*.md", "brand/*.json", "py.typed"]
+shiftai_shared = ["templates/*.md", "brand/*.json", "context_store/migrations/*.sql", "py.typed"]
 
 [tool.ruff]
 line-length = 100
@@ -42,7 +45,7 @@ mypy_path = "src"
 packages = ["shiftai_shared"]
 
 [[tool.mypy.overrides]]
-module = ["msal", "msal.*", "docx", "docx.*", "jsonschema", "jsonschema.*"]
+module = ["msal", "msal.*", "docx", "docx.*", "jsonschema", "jsonschema.*", "psycopg", "psycopg.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

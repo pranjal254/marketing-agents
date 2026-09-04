@@ -380,3 +380,26 @@ def test_telemetry_records_validate_against_sts_schema(
     assert len(records) >= 8
     assert all(r["shiftai.agent.id"] == "content_repurposing" for r in records)
     assert all(r["shiftai.agent.type"] == "decision" for r in records)
+
+
+def test_flagship_without_any_marker_stages_but_escalates(
+    store: InMemoryContextStore,
+    workspace: LocalCampaignWorkspace,
+    sink: InMemorySink,
+    config: RepurposingConfig,
+    settings: SharedSettings,
+) -> None:
+    """Marker-free prose is legal (nothing invented) but must be VISIBLE: the
+    fan-out would inherit an empty claim inventory (observed live, 2026-09-03)."""
+    unmarked = json.loads(FLAGSHIP_JSON)
+    unmarked["sections"] = [
+        {"heading": "Prose only", "paragraphs": ["Calm positioning without claims."]}
+    ]
+    unmarked["claims_used"] = []
+    provider = MockLLMProvider(default=json.dumps(unmarked))
+    agent = build_agent(provider, store, workspace, sink, config, settings)
+    outcome = agent.draft_flagship(CAMPAIGN_ID)
+    assert outcome.status == "flagship_staged"  # staged — humans decide
+    assert "unsourced_claim" in outcome.escalation_reasons
+    codes = [e.get("shiftai.learn.reason_code") for e in events_of(sink, "case_escalated")]
+    assert "unsourced_claim" in codes

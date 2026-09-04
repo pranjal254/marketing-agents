@@ -40,6 +40,11 @@ class SharedSettings(BaseSettings):
     shiftai_tenant_id: str = Field(default="levelshift-internal", alias="SHIFTAI_TENANT_ID")
     telemetry_sink_path: str = Field(default="telemetry-out.jsonl", alias="TELEMETRY_SINK_PATH")
     context_store_path: str = Field(default="context-store.sqlite", alias="CONTEXT_STORE_PATH")
+    # Context Store backend selection: set → the tenant-scoped Postgres binding
+    # (durable, RLS-isolated, append-only enforced in-schema; requires the
+    # shiftai-shared[postgres] extra); unset → local SQLite, exactly as before.
+    # Hosted databases should include sslmode=require in the URL.
+    database_url: SecretStr | None = Field(default=None, alias="DATABASE_URL")
 
     # LLM provider selection: production uses anthropic; dev may use azure_openai or mock.
     llm_provider: ProviderName = Field(default="anthropic", alias="LLM_PROVIDER")
@@ -57,9 +62,11 @@ class SharedSettings(BaseSettings):
     azure_openai_rate_input: float | None = Field(default=None, alias="AZURE_OPENAI_RATE_INPUT")
     azure_openai_rate_output: float | None = Field(default=None, alias="AZURE_OPENAI_RATE_OUTPUT")
 
-    @field_validator("azure_openai_rate_input", "azure_openai_rate_output", mode="before")
+    @field_validator(
+        "azure_openai_rate_input", "azure_openai_rate_output", "database_url", mode="before"
+    )
     @classmethod
-    def _blank_rate_is_unset(cls, value: object) -> object:
+    def _blank_is_unset(cls, value: object) -> object:
         return None if value == "" else value
 
     # Microsoft Graph (client-credential flow)

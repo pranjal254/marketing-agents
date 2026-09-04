@@ -17,6 +17,8 @@ reference/
 
 # dev run artifacts
 .dev-run/
+.playwright-cli/
+.playwright/
 telemetry-out.jsonl
 context-store.sqlite
 idempotency.sqlite

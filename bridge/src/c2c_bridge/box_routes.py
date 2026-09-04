@@ -132,46 +132,32 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
 
     @app.post("/api/box/campaigns/{campaign_id}/assets/{asset_id}/confirm")
     def confirm_asset(campaign_id: str, asset_id: str, body: AssetConfirmIn) -> dict[str, Any]:
-        """Content-confirm one checklist asset (the human decision Agent 4 will
-        carry in production). When Agent 3 has staged a real draft for the asset,
-        its ACTUAL bytes + claim lineage are registered; the synthetic document is
-        only a fallback for assets Agent 3 does not draft (e.g. reuse decisions)."""
-        from c2c_content_repurposing import persistence as rp_db
+        """Content-confirm one checklist asset. This is now Agent 4's human gate:
+        the review agent records the identity-stamped confirmation and its signal
+        binding registers the REAL staged bytes + claim lineage with packaging
+        (a labeled placeholder only for reuse assets Agent 3 never drafts)."""
+        from c2c_collaboration.orchestration import ReviewGateError
 
-        case = box_db.load_plan_case(store(), campaign_id) or {}
-        slug = str(case.get("campaign_slug", "campaign"))
-        prior = [
-            a.version for a in box_db.load_registered_assets(store(), campaign_id)
-            if a.asset_id == asset_id
-        ]
-        content = _asset_docx(asset_id, body.text)
-        claim_refs = list(body.claim_refs)
-        staged = rp_db.latest_draft(store(), campaign_id, asset_id)
-        draft_version = 0
-        if staged is not None and staged.status == "staged" and staged.file_ref:
-            content = bridge().repurposer.deps.workspace.download(staged.file_ref)
-            draft_version = staged.version
-            claim_refs = claim_refs or staged.claim_lineage or [
-                m.source_ref for m in staged.claim_markers
-            ]
-        # The confirmed copy versions PAST both prior registrations and Agent 3's
-        # staged drafts, so its canonical filename never collides in drafts/.
-        version = max([*prior, draft_version, 0]) + 1
-        filename = f"{slug}-{asset_id.replace('_', '-')}-v{version}.docx"
         try:
             with bridge().run_lock:
-                asset: RegisteredAsset = orchestrator().register_confirmed_asset(
-                    campaign_id,
-                    asset_id,
-                    filename=filename,
-                    content=content,
-                    actor_id=body.actor_id,
-                    actor_role=body.actor_role,
-                    claim_refs=claim_refs,
-                    version=version,
+                bridge().collab.confirm_content(
+                    campaign_id, asset_id,
+                    actor_id=body.actor_id, actor_role=body.actor_role,
                 )
+        except ReviewGateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except PlanGateError as exc:
             raise _gate_error(exc) from exc
+        registered = [
+            a for a in box_db.load_registered_assets(store(), campaign_id)
+            if a.asset_id == asset_id
+        ]
+        if not registered:
+            raise HTTPException(
+                status_code=409,
+                detail=f"confirmation recorded but {asset_id!r} did not register — retry",
+            )
+        asset: RegisteredAsset = max(registered, key=lambda a: a.version)
         return asset.model_dump()
 
     @app.post("/api/box/campaigns/{campaign_id}/package")
@@ -185,6 +171,8 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
 
     @app.post("/api/box/campaigns/{campaign_id}/reopen")
     def reopen(campaign_id: str, body: ReopenIn) -> dict[str, Any]:
+        from c2c_collaboration.orchestration import ReviewGateError
+
         try:
             with bridge().run_lock:
                 outcome = orchestrator().reopen_assets(
@@ -195,6 +183,17 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
                     actor_role=body.actor_role,
                     notes=body.notes,
                 )
+                # The review cycle re-opens with the packaging state (Agent 4's
+                # gate_findings input): the asset goes back to in_review.
+                for asset_id in body.asset_ids:
+                    try:
+                        bridge().collab.reopen_review(
+                            campaign_id, asset_id,
+                            reason=f"reopened by {body.requesting_gate}",
+                            actor_id=body.actor_id, actor_role=body.actor_role,
+                        )
+                    except ReviewGateError:
+                        continue  # never reviewed (pre-Agent-4 campaign) — fine
         except PlanGateError as exc:
             raise _gate_error(exc) from exc
         return outcome.model_dump()
