@@ -93,7 +93,7 @@ def test_flagship_selfcheck_regenerates_then_passes(
     assert outcome.draft is not None and outcome.draft.self_check.attempts == 2
 
 
-def test_flagship_persistent_selfcheck_failure_withholds_and_escalates(
+def test_flagship_persistent_selfcheck_failure_stages_with_flags_and_escalates(
     store: InMemoryContextStore,
     workspace: LocalCampaignWorkspace,
     sink: InMemorySink,
@@ -105,14 +105,18 @@ def test_flagship_persistent_selfcheck_failure_withholds_and_escalates(
     provider = MockLLMProvider(default=json.dumps(bad))
     agent = build_agent(provider, store, workspace, sink, config, settings)
     outcome = agent.draft_flagship(CAMPAIGN_ID)
-    assert outcome.status == "escalated"
-    assert outcome.draft is not None and outcome.draft.status == "withheld"
-    # Never staged: nothing landed in the workspace.
-    assert workspace.list_files("2026-Q4-erp-modernization/drafts") == []
+    # A flagship with body sections is STAGED for review (never a dead end); the
+    # persistent self-check failure rides along as a flag and still escalates.
+    assert outcome.status == "flagship_staged"
+    assert outcome.draft is not None and outcome.draft.status == "staged"
+    assert not outcome.draft.self_check.passed
+    assert workspace.list_files("2026-Q4-erp-modernization/drafts")  # it staged
     codes = [e.get("shiftai.learn.reason_code") for e in events_of(sink, "case_escalated")]
     assert "selfcheck_failed" in codes
-    # Regenerated exactly maxRegenerations extra times, then withheld.
+    # Regenerated exactly maxRegenerations extra times before staging with flags.
     assert outcome.draft.self_check.attempts == config.max_regenerations + 1
+    # A review-flag gap note tells the reviewer what is open.
+    assert any(g.section == "(review flags)" for g in outcome.draft.gap_notes)
 
 
 def test_flagship_all_sections_unverified_escalates_without_llm(
@@ -239,7 +243,7 @@ def test_fanout_inventory_falls_back_deterministically(
     assert outcome.inventory.items[0].source_ref == "sig:1"
 
 
-def test_fanout_withholds_failing_assets_and_stages_the_rest(
+def test_fanout_stages_failing_assets_with_review_flags(
     store: InMemoryContextStore,
     workspace: LocalCampaignWorkspace,
     sink: InMemorySink,
@@ -258,7 +262,7 @@ def test_fanout_withholds_failing_assets_and_stages_the_rest(
         script=[
             (lambda u: "Draft the flagship asset" in u, FLAGSHIP_JSON),
             (lambda u: u.startswith("Extract the confirmed flagship's claim inventory"), "nope"),
-            (is_faq, json.dumps(bad_derivative)),  # unsourced 87% → withheld
+            (is_faq, json.dumps(bad_derivative)),  # unsourced 87% → staged WITH a flag
             (lambda u: "derivative from the claim inventory" in u, DERIVATIVE_JSON),
         ],
         default="{}",
@@ -267,15 +271,15 @@ def test_fanout_withholds_failing_assets_and_stages_the_rest(
     agent.draft_flagship(CAMPAIGN_ID)
     agent.confirm_flagship(CAMPAIGN_ID, actor_id="jen")
     outcome = agent.run_fanout(CAMPAIGN_ID)
-    assert outcome.withheld == ["faq_service_page"]
-    assert {d.asset_id for d in outcome.staged} == {"linkedin_posts"}
+    # Nothing dead-ends: both assets stage. The unsourced 87% rides along as a
+    # review flag and still escalates; the Quality Gate is the final authority.
+    assert outcome.withheld == []
+    assert {d.asset_id for d in outcome.staged} == {"faq_service_page", "linkedin_posts"}
     codes = [e.get("shiftai.learn.reason_code") for e in events_of(sink, "case_escalated")]
     assert "selfcheck_failed" in codes
-    # The withheld asset never reached the workspace.
-    names = {f.name for f in workspace.list_files("2026-Q4-erp-modernization/drafts")}
-    assert not any("faq" in n for n in names)
-    # A gap note explains what is needed.
-    assert any(g.asset_id == "faq_service_page" for g in outcome.gap_notes)
+    faq = next(d for d in outcome.staged if d.asset_id == "faq_service_page")
+    assert not faq.self_check.passed
+    assert any(g.section == "(review flags)" for g in faq.gap_notes)
 
 
 def test_fanout_rerun_skips_already_staged(

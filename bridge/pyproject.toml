@@ -13,8 +13,10 @@ dependencies = [
     "campaign-in-a-box-agent>=0.1.0",
     "content-repurposing-agent>=0.1.0",
     "collaboration-iteration-agent>=0.1.0",
+    "quality-gate-agent>=0.1.0",
     "fastapi>=0.111",
     "uvicorn>=0.30",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

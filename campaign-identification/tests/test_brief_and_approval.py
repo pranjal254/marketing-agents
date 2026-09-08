@@ -52,17 +52,17 @@ def test_every_field_carries_provenance(complete_raw: dict) -> None:
     for field in brief.fields:  # type: ignore[attr-defined]
         assert field.provenance.startswith("intake form")
     assert brief.status == "awaiting_approval"  # type: ignore[attr-defined]
-    assert brief.template_version == "0.1.0-draft"  # type: ignore[attr-defined]
+    assert brief.template_version == "1.0.0"  # type: ignore[attr-defined]
 
 
 def test_docx_contains_brief_content(complete_raw: dict) -> None:
     brief = _brief(complete_raw)
     data = brief_docx(brief)  # type: ignore[arg-type]
     document_xml = zipfile.ZipFile(io.BytesIO(data)).read("word/document.xml").decode("utf-8")
-    assert "Campaign Brief" in document_xml
+    assert "MARKETING CAMPAIGN BRIEF" in document_xml  # branded cover kicker (uppercased)
     assert "manufacturing" in document_xml
     assert "cmp_9" in document_xml  # conflict citation present for the approver
-    assert "awaiting BU Campaign Lead approval" in document_xml
+    assert "awaiting approval" in document_xml  # approval record status
     assert brief_filename(brief).endswith("-brief-v1.docx")  # type: ignore[arg-type]
 
 

@@ -69,11 +69,24 @@ class BridgeSignals:
         staged = rp_db.latest_draft(store, campaign_id, asset_id)
         draft_version = 0
         claim_refs: list[str] = []
+        if staged is not None and staged.status == "withheld":
+            # Never package a draft the self-check refused — and never mask it
+            # with a placeholder. The confirm routes block this earlier; this is
+            # defense-in-depth (the raise lands as a tool_failure escalation).
+            reasons = ", ".join(
+                f["rule_id"] for f in staged.self_check.findings
+            ) or "see draft card"
+            raise RuntimeError(
+                f"latest draft of {asset_id!r} was WITHHELD by self-check "
+                f"({reasons}) — rework the asset before confirmation"
+            )
         if staged is not None and staged.status == "staged" and staged.file_ref:
             content = bridge.repurposer.deps.workspace.download(staged.file_ref)
             draft_version = staged.version
             claim_refs = staged.claim_lineage or [m.source_ref for m in staged.claim_markers]
         else:
+            # No draft chain at all: a genuine reuse-decision asset — the
+            # repository version is used as-is in production.
             content = _fallback_docx(asset_id)
         # Version past both prior registrations and the draft chain — the
         # canonical filename never collides in the drafts folder.
@@ -94,3 +107,68 @@ class BridgeSignals:
         self._bridge().repurposer.apply_rework(
             campaign_id, asset_id, instruction=instruction, actor_id=actor_id
         )
+
+
+class GateSignals:
+    """Binds Agent 5's Signals protocol to the co-hosted agents (Execution Studio
+    routes these in production). ``bridge`` is the zero-arg accessor returning the
+    live Bridge instance."""
+
+    GATE_ACTOR = "quality_gate_approval"
+
+    def __init__(self, bridge: Any) -> None:
+        self._bridge = bridge
+
+    def assets_failed(
+        self, campaign_id: str, findings_by_asset: dict[str, list[str]]
+    ) -> None:
+        """Failed assets return to the Collaboration Agent WITH findings, and the
+        packaging case re-opens for exactly those assets so the reworked versions
+        can re-register (spec step 12: re-entry at packaging)."""
+        bridge = self._bridge()
+        asset_ids = sorted(findings_by_asset)
+        bridge.box.reopen_assets(
+            campaign_id, asset_ids,
+            requesting_gate="quality-gate", actor_id=self.GATE_ACTOR,
+            notes="gate findings — see compliance report",
+        )
+        for asset_id in asset_ids:
+            bridge.collab.reopen_review(
+                campaign_id, asset_id,
+                reason="gate_findings", actor_id=self.GATE_ACTOR,
+            )
+            for line in findings_by_asset[asset_id]:
+                bridge.collab.add_feedback(
+                    campaign_id, asset_id,
+                    reviewer_id=self.GATE_ACTOR, reviewer_role="quality-gate",
+                    section="", text=line,
+                )
+
+    def package_returned(
+        self, campaign_id: str, asset_ids: list[str], notes: str, actor_id: str
+    ) -> None:
+        """A human review return: reviewer notes travel VERBATIM into the re-opened
+        review cycle and the packaging case re-opens for the named assets."""
+        bridge = self._bridge()
+        bridge.box.reopen_assets(
+            campaign_id, asset_ids,
+            requesting_gate="approval-review", actor_id=actor_id,
+            actor_role="content-reviewer", notes=notes,
+        )
+        for asset_id in asset_ids:
+            bridge.collab.reopen_review(
+                campaign_id, asset_id,
+                reason="approval_return", actor_id=actor_id,
+                actor_role="content-reviewer",
+            )
+            bridge.collab.add_feedback(
+                campaign_id, asset_id,
+                reviewer_id=actor_id, reviewer_role="content-reviewer",
+                section="", text=notes or "Returned from approval review.",
+            )
+
+    def package_approved(self, campaign_id: str, manifest_version: int) -> None:
+        """Phase 1's terminal hand-off: the locked package reference is persisted
+        by the agent itself; Launch & Publishing (Phase 2) picks it up from the
+        Context Store. Nothing is published from here — deliberately a no-op."""
+        return None

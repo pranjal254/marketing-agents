@@ -28,7 +28,7 @@ postgres = ["psycopg[binary]>=3.1"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-shiftai_shared = ["templates/*.md", "brand/*.json", "context_store/migrations/*.sql", "py.typed"]
+shiftai_shared = ["templates/*.md", "brand/*.json", "brand/assets/*.png", "context_store/migrations/*.sql", "py.typed"]
 
 [tool.ruff]
 line-length = 100

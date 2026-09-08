@@ -34,14 +34,48 @@ _SEGMENT_NORMALIZE = {
     "standard": "standard",
 }
 
+# The nine industries LevelShift serves (Brand Playbook, Word Choice & Style →
+# Industry-Grounded). "technology" is the slug for High Tech.
 _VERTICAL_NORMALIZE = {
     "financial services": "financial_services",
     "finserv": "financial_services",
     "financial_services": "financial_services",
+    "banking": "financial_services",
     "manufacturing": "manufacturing",
     "technology": "technology",
     "tech": "technology",
+    "high tech": "technology",
+    "high_tech": "technology",
+    "hightech": "technology",
+    "software": "technology",
+    "healthcare": "healthcare",
+    "health care": "healthcare",
+    "real estate": "real_estate",
+    "real_estate": "real_estate",
+    "hospitality": "hospitality_travel",
+    "travel": "hospitality_travel",
+    "hospitality and travel": "hospitality_travel",
+    "hospitality_travel": "hospitality_travel",
+    "nonprofit": "nonprofit_education",
+    "non-profit": "nonprofit_education",
+    "education": "nonprofit_education",
+    "nonprofit and education": "nonprofit_education",
+    "nonprofit_education": "nonprofit_education",
+    "professional services": "professional_services",
+    "professional_services": "professional_services",
+    "retail": "retail",
 }
+
+
+def _normalize_multi(raw: str | None, mapping: dict[str, str]) -> str | None:
+    """Normalize a possibly multi-valued field (comma/;-separated) token by token;
+    unknown tokens pass through for validation to flag."""
+    if not raw:
+        return None
+    tokens = [t.strip() for t in raw.replace(";", ",").split(",") if t.strip()]
+    if not tokens:
+        return None
+    return ", ".join(mapping.get(t.lower(), t) for t in tokens)
 
 
 def _first(raw: dict[str, Any], field: str) -> Any:
@@ -106,12 +140,8 @@ def normalize_request(
         requester=_as_str(_first(raw, "requester")),
         objective=_as_str(_first(raw, "objective")),
         business_unit=_as_str(_first(raw, "business_unit")),
-        vertical=(
-            _VERTICAL_NORMALIZE.get(vertical_raw.lower(), vertical_raw) if vertical_raw else None
-        ),
-        target_segment=(
-            _SEGMENT_NORMALIZE.get(segment_raw.lower(), segment_raw) if segment_raw else None
-        ),
+        vertical=_normalize_multi(vertical_raw, _VERTICAL_NORMALIZE),
+        target_segment=_normalize_multi(segment_raw, _SEGMENT_NORMALIZE),
         offer_topic=_as_str(_first(raw, "offer_topic")),
         channels=_as_list(lowered.get("channels") or lowered.get("intended_channels")),
         timeline_start=_as_str(_first(raw, "timeline_start")),

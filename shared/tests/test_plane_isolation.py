@@ -42,6 +42,9 @@ CONNECTOR_ALLOWED = {"semrush", "brief"}  # vendor name + generic connector docs
 
 # Versioned Business Capability content — domain by design, exempt from the scan.
 CAPABILITY_DIRS = {"brand"}
+# Capability content that lives as a single module rather than a directory: the
+# workspace user directory carries org role names (e.g. "BU Campaign Lead").
+CAPABILITY_FILES = {"users.py"}
 
 # Settings may declare connector env vars beside GRAPH_*.
 CONFIG_ALLOWED = {"semrush"}
@@ -58,7 +61,7 @@ def _python_sources() -> list[Path]:
 
 def _module_kind(path: Path) -> str:
     parts = set(path.relative_to(SHARED_SRC).parts[:-1])
-    if parts & CAPABILITY_DIRS:
+    if parts & CAPABILITY_DIRS or path.name in CAPABILITY_FILES:
         return "capability"
     if parts & CONNECTOR_DIRS:
         return "connector"

@@ -52,7 +52,7 @@ def test_validation_flags_ambiguous_select(config: DecisionAgentConfig) -> None:
     raw = {
         "objective": "o",
         "business_unit": "Tech",
-        "vertical": "retail",
+        "vertical": "space_tourism",
         "target_segment": "type_3",
         "offer_topic": "t",
         "channels": "email",

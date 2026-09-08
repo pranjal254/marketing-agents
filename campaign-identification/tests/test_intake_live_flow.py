@@ -89,11 +89,11 @@ def test_extraction_fills_only_stated_fields(harness: dict[str, Any]) -> None:
     assert request["channels"] == ["linkedin", "email"]
     assert "objective" in request["derived_fields"]
     # never-extracted fields stay with the human even when the model returns them
-    assert request["target_segment"] is None
+    assert request["target_segment"] == "type_3"  # v1.1 policy: extractable when stated
     assert request["budget_flag"] is None
     # gap questions cover exactly the human-only leftovers
     fields = {q.field for q in outcome.gap_request.questions}
-    assert "target_segment" in fields and "budget_flag" in fields
+    assert "budget_flag" in fields  # v1.1: segment was extractable from the text
     assert "objective" not in fields
     # the extraction call is telemetry-visible with model usage
     tools = records_of(harness["sink"], "tool_execution", outcome.case_id)

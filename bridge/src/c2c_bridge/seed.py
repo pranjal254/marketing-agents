@@ -1,74 +1,45 @@
-"""Dev-session seed data (bridge only, never production): a small sample content
-repository and intel library so Agent 2's reuse search and intel gathering have
-something real to evaluate in a fresh session. Clearly synthetic content."""
+"""Session workspace bootstrap (bridge only) — NO canned marketing content.
+
+The reusable-asset repository starts EMPTY: reuse/adapt decisions arise only
+from assets users actually provide, never from synthetic samples. The intel
+library is GENERATED at session start from the committed brand rules pack:
+marketing-approved practice positioning and proof points (straight from the
+Brand Playbook). That gives planning real, sourced claim material with zero
+dependence on local knowledge folders — deployments have nothing to mount."""
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-INTEL_FILES = {
-    "manufacturing-erp-modernization-notes.md": (
-        "# Curated intel (dev sample)\n\n"
-        "Manufacturers in the mid-market report ERP modernization as a top-3 "
-        "initiative for 2026; integration debt with legacy systems is the most "
-        "cited blocker. (Synthetic dev-session sample file.)"
-    ),
-    "finserv-ai-adoption-notes.md": (
-        "# Curated intel (dev sample)\n\n"
-        "Financial services firms prioritize governed AI adoption; compliance "
-        "review time is the dominant rollout constraint. (Synthetic dev-session "
-        "sample file.)"
-    ),
-}
-
-REPO_ASSETS = [
-    {
-        "path": "manufacturing/erp-modernization-faq.docx",
-        "content": b"Sample reusable FAQ copy for ERP modernization (dev seed).",
-        "meta": {
-            "asset_type": "faq_service_page",
-            "vertical": "manufacturing",
-            "business_unit": "Dynamics",
-            "topics": ["erp", "modernization", "dynamics"],
-        },
-    },
-    {
-        "path": "manufacturing/erp-one-pager.docx",
-        "content": b"Sample external one-pager for ERP campaigns (dev seed).",
-        "meta": {
-            "asset_type": "external_one_pager",
-            "vertical": "manufacturing",
-            "business_unit": "Dynamics",
-            "topics": ["erp", "modernization"],
-        },
-    },
-    {
-        "path": "financial_services/finserv-ai-blog.docx",
-        "content": b"Sample flagship blog on governed AI in FinServ (dev seed).",
-        "meta": {
-            "asset_type": "flagship_blog",
-            "vertical": "financial_services",
-            "business_unit": "Data360",
-            "topics": ["ai", "governance", "finserv"],
-        },
-    },
-]
+from shiftai_shared.brand import BrandRules
 
 
-def seed_dev_workspace(box_workspace: Path, repository: Path) -> None:
+def seed_dev_workspace(box_workspace: Path, repository: Path, rules: BrandRules) -> None:
+    repository.mkdir(parents=True, exist_ok=True)  # empty on purpose
     intel_dir = box_workspace / "02-Reference" / "intel-library"
     intel_dir.mkdir(parents=True, exist_ok=True)
-    for name, text in INTEL_FILES.items():
-        target = intel_dir / name
-        if not target.exists():
-            target.write_text(text, encoding="utf-8")
-    for asset in REPO_ASSETS:
-        target = repository / str(asset["path"])
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.exists():
-            content = asset["content"]
-            assert isinstance(content, bytes)
-            target.write_bytes(content)
-            sidecar = target.with_name(target.name + ".meta.json")
-            sidecar.write_text(json.dumps(asset["meta"], indent=2), encoding="utf-8")
+    # One file per practice so each surfaces as its own intel signal (excerpted);
+    # the proof point leads so it always lands inside the excerpt window.
+    for practice in rules.practices:
+        target = intel_dir / f"{practice.id}-practice.md"
+        if target.exists():
+            continue
+        target.write_text(
+            f"# {practice.name} ({rules.brand_name} Brand Playbook, "
+            f"pack {rules.rules_pack_id} v{rules.version})\n\n"
+            f"Approved proof point: {practice.proof_point}\n\n"
+            f"Tagline: {practice.tagline}\n"
+            f"Offer: {practice.offer}\n"
+            f"Pain solved: {practice.pain}\n"
+            f"Benefit: {practice.benefit}\n",
+            encoding="utf-8",
+        )
+    credentials = intel_dir / "credentials.md"
+    if not credentials.exists() and rules.credentials:
+        credentials.write_text(
+            f"# {rules.brand_name} credentials (Brand Playbook, "
+            f"pack {rules.rules_pack_id} v{rules.version})\n\n"
+            + "\n".join(f"- {c}" for c in rules.credentials)
+            + "\n",
+            encoding="utf-8",
+        )

@@ -1,0 +1,168 @@
+{
+  "rulesPackId": "demandblue-brand-rules",
+  "brandName": "DemandBlue",
+  "version": "0.1.0-draft",
+  "status": "draft — derived from the DemandBlue starter guidelines; pending DemandBlue Marketing Lead sign-off",
+  "sources": [
+    "shiftai-marketing/references/brand-guidelines/demandblue-brand-guidelines.md (v0.1 starter, 2026)",
+    "DemandBlue campaign plan taxonomy (Consolidated Campaign Plan for ShiftAI_2026.xlsx, marketing-owned)"
+  ],
+  "positioning": "DemandBlue delivers on-demand Salesforce services — consulting, implementation, and managed support billed for outcomes rather than fixed retainers. We help companies get more from their existing Salesforce investment across Sales, Service, and Experience Cloud, the Salesforce Platform (Force.com), and Salesforce Einstein. We are a Salesforce partner — we implement and optimize Salesforce; we are not Salesforce itself, and never imply otherwise.",
+  "archetype": "The trusted practitioner: hands-on Salesforce expertise, on demand, accountable for outcomes.",
+  "tone": "Practical and outcome-focused. Confident, not hyped — claims are earned with evidence, not adjectives. Consultative, never pushy. No urgency or fear framing.",
+  "voice": [
+    {
+      "id": "outcome_first",
+      "label": "Outcome-First (Not Feature-First)",
+      "do": "Lead with the business result, then the how. Tie every Salesforce capability to a measurable outcome.",
+      "dont": "List product features without context or write about the platform in the abstract."
+    },
+    {
+      "id": "evidence_not_adjectives",
+      "label": "Evidence (Not Adjectives)",
+      "do": "Earn claims with sourced proof points. Numbers over superlatives.",
+      "dont": "Use hype words or unsubstantiated superlatives in place of a sourced fact."
+    },
+    {
+      "id": "respect_reader_expertise",
+      "label": "Respect the Reader's Expertise",
+      "do": "Write to Salesforce-literate readers. Use correct platform terminology; define acronyms once.",
+      "dont": "Over-explain basics or talk down. Avoid 'clearly' and 'obviously'."
+    },
+    {
+      "id": "consultative_not_pushy",
+      "label": "Consultative (Not Pushy)",
+      "do": "Invite the next conversation with one specific, low-pressure call to action.",
+      "dont": "Use fear or urgency framing such as 'act now or fall behind'."
+    }
+  ],
+  "wordChoice": {
+    "overuseFlagged": [
+      "leverage",
+      "seamless",
+      "frictionless",
+      "unlock",
+      "delve"
+    ],
+    "avoidTerms": [
+      "clearly",
+      "obviously",
+      "businesses everywhere"
+    ],
+    "bannedTerms": [
+      "revolutionary",
+      "game-changing",
+      "cutting-edge",
+      "world-class",
+      "best-in-class",
+      "synergy",
+      "supercharge",
+      "turbocharge"
+    ],
+    "bannedTermsNote": "From the DemandBlue starter guidelines' banned/discouraged table. Marketing may extend this list (internal names, deprecated product terms, legal-flagged phrases).",
+    "urgencyFearFlagged": [
+      "act now",
+      "don't miss",
+      "limited time",
+      "before it's too late",
+      "falling behind",
+      "risk being left behind",
+      "urgent"
+    ],
+    "urgencyFearNote": "Guideline rule: consultative, never pushy — no fear or urgency framing. Term list is a draft heuristic; the LLM prompt carries the rule in full."
+  },
+  "terminology": [
+    {
+      "id": "salesforce_capitalization",
+      "rule": "Write 'Salesforce' capitalized, one word — never 'sales force' or 'SalesForce'."
+    },
+    {
+      "id": "einstein_first_mention",
+      "rule": "Write 'Salesforce Einstein' on first mention, then 'Einstein'. Einstein is Salesforce's AI — never present it as a DemandBlue product."
+    },
+    {
+      "id": "appexchange_one_word",
+      "rule": "Write 'AppExchange' as one word, capital A and E."
+    },
+    {
+      "id": "platform_forcecom",
+      "rule": "'Salesforce Platform' is the current name for Force.com; where the audience knows it as Force.com, write 'Salesforce Platform (Force.com)' on first mention."
+    },
+    {
+      "id": "cloud_names_verbatim",
+      "rule": "Sales Cloud, Service Cloud, Experience Cloud, Revenue Cloud — capitalized, exactly as Salesforce names them."
+    },
+    {
+      "id": "partner_not_salesforce",
+      "rule": "Never claim DemandBlue is Salesforce or built Salesforce features. DemandBlue configures, integrates, optimizes, and supports."
+    },
+    {
+      "id": "no_disparagement",
+      "rule": "Never name competitors disparagingly; comparisons stay factual and sourced."
+    },
+    {
+      "id": "no_em_dash",
+      "rule": "Never use em dashes or en dashes in content; use commas, colons, or separate sentences."
+    }
+  ],
+  "contentSelfCheck": [
+    "Does the piece lead with a business outcome the reader cares about — not a service description?",
+    "Does every statistic, ROI figure, or competitor claim trace to a source in references/proof-points/? No source → gap note, never an invented number.",
+    "Is any named customer covered by a permission on file (case-studies index)?",
+    "Is DemandBlue positioned as a Salesforce partner — never as Salesforce itself?",
+    "Are Salesforce product names written exactly as Salesforce names them?",
+    "Have all banned and hype terms been removed?",
+    "Is there one specific, low-pressure call to action?",
+    "Would a Salesforce-literate reader feel their expertise was respected?"
+  ],
+  "playbooks": {
+    "blog": {
+      "purpose": "Show DemandBlue understands the real problems Salesforce customers face getting value from their org.",
+      "structure": "Hook (1–2 sentences) → The Problem → The Insight/Approach → Practical Takeaway → CTA",
+      "voice": "First person plural (We). Practical and direct.",
+      "wordCount": "700–1,200"
+    },
+    "email": {
+      "purpose": "One nurture touchpoint: move the reader one step, with relevance and timing.",
+      "structure": "Subject line → Opening: one-sentence pain-point context → The Value → CTA: one clear action → Signature",
+      "voice": "Personal and direct, one person to one person. Short paragraphs.",
+      "wordCount": null
+    },
+    "service_page": {
+      "purpose": "Answer: can these people help me with my Salesforce org? Move the reader from interest to action.",
+      "structure": "Opening: the business problem → What We Do → How On-Demand Works → Proof → CTA",
+      "voice": "Second person (You). Every capability followed by a benefit.",
+      "wordCount": null
+    },
+    "case_study": {
+      "purpose": "Let sourced, permissioned results do the talking — the Decision-stage conversion asset.",
+      "structure": "Result at a glance → Customer Context → The Problem → What DemandBlue Did → The Outcome (sourced) → Customer Perspective",
+      "voice": "Evidence-led. Past tense, active voice. Numbers over adjectives — and only sourced numbers.",
+      "wordCount": null
+    }
+  },
+  "personas": [
+    {
+      "id": "revops_leader",
+      "title": "The RevOps Leader (VP Revenue Operations / Sales Operations, 100M–500M revenue)",
+      "pains": "Revenue leakage from slow quote-to-cash. Salesforce org sprawl and dirty data undermining forecasts. No capacity for the backlog of fixes.",
+      "keyMessage": "DemandBlue gives you expert Salesforce hands on demand — scoped to the work that moves your revenue numbers, without a fixed retainer."
+    },
+    {
+      "id": "salesforce_admin",
+      "title": "The Salesforce Admin/Platform Owner (Admin, BA, or IT lead who owns the org)",
+      "pains": "A request queue that outstrips capacity. Technical debt from past customizations. Pressure to adopt new Salesforce releases and Einstein features safely.",
+      "keyMessage": "On-demand certified experts extend your team for exactly the configuration, integration, and cleanup work you can't staff — you stay in control of the org."
+    }
+  ],
+  "credentials": [
+    "Salesforce partner: consulting, implementation, and managed support delivered on demand",
+    "Practice coverage across Sales Cloud, Service Cloud, Experience Cloud, Revenue Cloud, the Salesforce Platform (Force.com), Salesforce Einstein, and AppExchange solutions"
+  ],
+  "credentialsNote": "Draft — replace with DemandBlue's verified partner tier, certification counts, and ratings once marketing confirms them. Nothing quantified is claimed until sourced.",
+  "styleRules": [
+    "Never use em dashes or en dashes in generated content. Use commas, colons, parentheses, or separate sentences instead.",
+    "Numbers over adjectives, and only sourced numbers.",
+    "One clear, low-pressure call to action per piece."
+  ]
+}

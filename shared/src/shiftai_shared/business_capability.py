@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class IntakeField(BaseModel):
     model_config = ConfigDict(frozen=True)
     field: str
-    type: Literal["text", "number", "date", "boolean", "select", "list"]
+    type: Literal["text", "number", "date", "boolean", "select", "multiselect", "list"]
     required: bool
     options: list[str] | None = None
 

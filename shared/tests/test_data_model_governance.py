@@ -20,12 +20,19 @@ MIGRATIONS = (
     AGENTS_ROOT / "shared" / "src" / "shiftai_shared" / "context_store" / "migrations"
 )
 ENGINE_SQL = (MIGRATIONS / "0001_engine.sql").read_text(encoding="utf-8")
-CAPABILITY_SQL = (MIGRATIONS / "0002_capability_c2c.sql").read_text(encoding="utf-8")
+# Every capability migration (0002+) seeds catalog rows; the engine (0001) never does.
+CAPABILITY_SQL = "\n".join(
+    p.read_text(encoding="utf-8")
+    for p in sorted(MIGRATIONS.glob("*.sql"))
+    if p.name != "0001_engine.sql"
+)
 
 AGENT_SOURCES = [
     AGENTS_ROOT / "campaign-identification" / "src" / "campaign_identification",
     AGENTS_ROOT / "campaign-in-a-box" / "src" / "c2c_campaign_box",
     AGENTS_ROOT / "content-repurposing" / "src" / "c2c_content_repurposing",
+    AGENTS_ROOT / "collaboration-iteration" / "src" / "c2c_collaboration",
+    AGENTS_ROOT / "quality-gate" / "src" / "c2c_quality_gate",
 ]
 
 KIND_CONSTANT = re.compile(r'^KIND_[A-Z_]+\s*=\s*"([a-z_]+)"', re.MULTILINE)
@@ -41,8 +48,11 @@ def _kinds_in_code() -> set[str]:
 
 
 def _kinds_in_catalog() -> set[str]:
-    seed = CAPABILITY_SQL.split("INSERT INTO record_kinds", 1)[1].split("ON CONFLICT", 1)[0]
-    return set(re.findall(r"^\s*\('([a-z_]+)',", seed, re.MULTILINE))
+    kinds: set[str] = set()
+    for chunk in CAPABILITY_SQL.split("INSERT INTO record_kinds")[1:]:
+        seed = chunk.split("ON CONFLICT", 1)[0]
+        kinds |= set(re.findall(r"^\s*\('([a-z_]+)',", seed, re.MULTILINE))
+    return kinds
 
 
 def test_every_kind_constant_is_registered_in_the_catalog() -> None:

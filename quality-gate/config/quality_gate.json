@@ -1,0 +1,64 @@
+{
+  "agentType": "hybrid",
+  "agentId": "quality_gate_approval",
+  "version": "0.1.2",
+  "policyStatus": "0.1.0-draft — distribution classes and review sequences verbatim from the Phase 1 spec routing policy; pending VP Marketing/CMO sign-off",
+  "distributionClasses": {
+    "flagship_blog": "public",
+    "email_touchpoints": "public",
+    "linkedin_posts": "public",
+    "faq_service_page": "public",
+    "community_draft": "public",
+    "external_one_pager": "public",
+    "case_study": "public",
+    "battle_card": "internal",
+    "call_scripts": "internal",
+    "enablement_notes": "internal"
+  },
+  "reviewSequences": {
+    "public": [
+      { "step": "grammar_qa", "role": "grammar-quality-reviewer", "slaBusinessDays": 2 }
+    ],
+    "internal": [
+      { "step": "grammar_qa_light", "role": "grammar-quality-reviewer", "slaBusinessDays": 1 }
+    ]
+  },
+  "packageSignoff": { "step": "bu_lead_signoff", "role": "bu-campaign-lead", "slaBusinessDays": 2 },
+  "packageSlaBusinessDays": 5,
+  "reminderThresholds": [0.5, 0.9],
+  "aeoNamedMentionAssetTypes": ["faq_service_page"],
+  "strategyVisibilityRole": "vp-marketing",
+  "routingMap": [
+    { "reason": "gate_failed", "routesTo": "collaboration-rework" },
+    { "reason": "unsourced_claim", "routesTo": "collaboration-rework" },
+    { "reason": "review_overdue", "routesTo": "marketing-lead-queue" },
+    { "reason": "finding_disputed", "routesTo": "marketing-lead-queue" },
+    { "reason": "package_slip", "routesTo": "bu-lead-queue" },
+    { "reason": "hash_mismatch", "routesTo": "aicoe-queue" },
+    { "reason": "checks_incomplete", "routesTo": "aicoe-queue" },
+    { "reason": "sequence_violation", "routesTo": "aicoe-queue" },
+    { "reason": "identity_missing", "routesTo": "aicoe-queue" },
+    { "reason": "lock_failure", "routesTo": "aicoe-queue" },
+    { "reason": "post_lock_modification", "routesTo": "aicoe-queue" },
+    { "reason": "calibration_alert", "routesTo": "aicoe-queue" },
+    { "reason": "workspace_failure", "routesTo": "aicoe-queue" },
+    { "reason": "tool_failure", "routesTo": "aicoe-queue" }
+  ],
+  "reasonCodes": [
+    "gate_failed",
+    "unsourced_claim",
+    "review_overdue",
+    "finding_disputed",
+    "package_slip",
+    "hash_mismatch",
+    "checks_incomplete",
+    "sequence_violation",
+    "identity_missing",
+    "lock_failure",
+    "post_lock_modification",
+    "calibration_alert",
+    "workspace_failure",
+    "tool_failure"
+  ],
+  "brandRulesVersion": "0.1.0-draft"
+}

@@ -41,6 +41,23 @@ def validate_request(
                     detail=f"value {value!r} not in {field_def.options}",
                 )
             )
+        if field_def.type == "multiselect" and field_def.options:
+            # Multi-value fields arrive as a comma-joined string (or list); every
+            # token must be an allowed option.
+            tokens = (
+                [str(v).strip() for v in value] if isinstance(value, list)
+                else [t.strip() for t in str(value).split(",") if t.strip()]
+            )
+            bad = [t for t in tokens if t not in field_def.options]
+            if bad:
+                missing.append(
+                    MissingField(
+                        field=field_def.field,
+                        code=f"ambiguous_{field_def.field}",
+                        kind="ambiguous",
+                        detail=f"value(s) {bad!r} not in {field_def.options}",
+                    )
+                )
     resolved = len(required) - len(missing)
     score = resolved / len(required) if required else 1.0
     return ValidationResult(

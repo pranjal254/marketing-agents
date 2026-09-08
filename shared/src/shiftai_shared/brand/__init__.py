@@ -20,8 +20,16 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-BRAND_RULES_VERSION = "0.1.0-draft"
-_RULES_FILE = "rules_v0_1_0.json"
+BRAND_RULES_VERSION = "0.2.0"
+_RULES_FILE = "rules_v0_2_0.json"
+
+# One committed JSON per business-unit brand. The active pack is a deployment
+# decision (bridge/CLI reads C2C_BRAND_PACK) — agent code stays pack-agnostic.
+BRAND_PACKS: dict[str, str] = {
+    "levelshift": _RULES_FILE,
+    "demandblue": "rules_demandblue_v0_1_0.json",
+}
+DEFAULT_BRAND_PACK = "levelshift"
 
 
 class VoiceRule(BaseModel):
@@ -62,10 +70,27 @@ class Playbook(BaseModel):
     word_count: str | None = Field(default=None, alias="wordCount")
 
 
+class Practice(BaseModel):
+    """One LevelShift practice from the Brand Playbook's practice-messaging
+    section: marketing-approved positioning AND proof points — the committed,
+    versioned claim source content generation may cite without a local file
+    repository."""
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    id: str
+    name: str
+    tagline: str
+    offer: str
+    pain: str
+    benefit: str
+    proof_point: str = Field(alias="proofPoint")
+
+
 class BrandRules(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="ignore")
 
     rules_pack_id: str = Field(alias="rulesPackId")
+    brand_name: str = Field(default="LevelShift", alias="brandName")
     version: str
     status: str
     sources: list[str]
@@ -78,11 +103,22 @@ class BrandRules(BaseModel):
     playbooks: dict[str, Playbook]
     personas: list[Persona]
     credentials: list[str]
+    # v0.2.0 additions (older packs default to empty — backward compatible).
+    style_rules: list[str] = Field(default_factory=list, alias="styleRules")
+    industries: list[str] = Field(default_factory=list)
+    practices: list[Practice] = Field(default_factory=list)
 
 
-def load_brand_rules() -> BrandRules:
-    """Load + validate the packaged rules JSON. Read-only — no save exists."""
-    raw = resources.files("shiftai_shared").joinpath(f"brand/{_RULES_FILE}").read_text("utf-8")
+def load_brand_rules(pack: str = DEFAULT_BRAND_PACK) -> BrandRules:
+    """Load + validate a packaged rules JSON. Read-only — no save exists.
+
+    ``pack`` selects the business-unit brand pack (see ``BRAND_PACKS``); an
+    unknown name fails loudly rather than silently falling back."""
+    name = pack.strip().lower() or DEFAULT_BRAND_PACK
+    filename = BRAND_PACKS.get(name)
+    if filename is None:
+        raise ValueError(f"unknown brand pack {pack!r}; available: {sorted(BRAND_PACKS)}")
+    raw = resources.files("shiftai_shared").joinpath(f"brand/{filename}").read_text("utf-8")
     return BrandRules.model_validate(json.loads(raw))
 
 
@@ -106,6 +142,18 @@ def lint_text(text: str, rules: BrandRules) -> list[LintFinding]:
     findings: list[LintFinding] = []
     lower = text.lower()
 
+    # Style: em/en dashes are banned in generated content (house style) — the
+    # LLM-favorite punctuation is the clearest "generated" tell.
+    dash = next((d for d in (chr(0x2014), chr(0x2013)) if d in text), None)
+    if dash is not None:
+        findings.append(
+            LintFinding(
+                rule_id="no_em_dash",
+                severity="error",
+                term=dash,
+                detail="Em/en dashes are banned; use commas, colons, or separate sentences.",
+            )
+        )
     # Terminology: "ShiftAI" is one word.
     if re.search(r"\bshift[\s-]+ai\b", lower):
         findings.append(
@@ -188,8 +236,8 @@ def brand_prompt_block(rules: BrandRules) -> str:
     )
     checks = "\n".join(f"- {q}" for q in rules.content_self_check)
     words = rules.word_choice
-    return (
-        f"LevelShift Brand Rules (pack {rules.rules_pack_id} v{rules.version}).\n"
+    block = (
+        f"{rules.brand_name} Brand Rules (pack {rules.rules_pack_id} v{rules.version}).\n"
         f"Positioning: {rules.positioning}\n"
         f"Tone: {rules.tone}\n"
         f"Voice:\n{voice}\n"
@@ -197,6 +245,23 @@ def brand_prompt_block(rules: BrandRules) -> str:
         f"Word choice: do not overuse {', '.join(words.overuse_flagged)}; "
         f"avoid {', '.join(words.avoid_terms)}; no urgency/fear phrases such as "
         f"{', '.join(words.urgency_fear_flagged)}.\n"
-        f"Buyer personas:\n{personas}\n"
-        f"Content self-check:\n{checks}"
     )
+    if rules.style_rules:
+        block += "Style rules (hard requirements):\n" + "\n".join(
+            f"- {s}" for s in rules.style_rules
+        ) + "\n"
+    if rules.industries:
+        block += f"Industries served: {', '.join(rules.industries)}.\n"
+    if rules.practices:
+        practices = "\n".join(
+            f"- {p.name}: {p.tagline} Offer: {p.offer} Pain solved: {p.pain} "
+            f"Benefit: {p.benefit} Approved proof point: {p.proof_point}"
+            for p in rules.practices
+        )
+        block += (
+            "Practices (marketing-approved positioning and proof points — the ONLY "
+            "pre-approved factual claims; cite them as source 'brand-playbook:"
+            "<practice id>'):\n" + practices + "\n"
+        )
+    block += f"Buyer personas:\n{personas}\nContent self-check:\n{checks}"
+    return block

@@ -1,32 +1,128 @@
 {
   "agentType": "decision",
   "agentId": "campaign_identification",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "intakeSchema": [
-    { "field": "objective", "type": "text", "required": true },
-    { "field": "business_unit", "type": "text", "required": true },
-    { "field": "vertical", "type": "select", "required": true, "options": ["financial_services", "manufacturing", "technology"] },
-    { "field": "target_segment", "type": "select", "required": true, "options": ["type_3", "type_4", "standard"] },
-    { "field": "offer_topic", "type": "text", "required": true },
-    { "field": "channels", "type": "list", "required": true },
-    { "field": "timeline_start", "type": "date", "required": true },
-    { "field": "timeline_end", "type": "date", "required": true },
-    { "field": "owner", "type": "text", "required": true },
-    { "field": "budget_flag", "type": "boolean", "required": true },
-    { "field": "requester", "type": "text", "required": true },
-    { "field": "free_text_context", "type": "text", "required": false }
+    {
+      "field": "objective",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "business_unit",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "vertical",
+      "type": "multiselect",
+      "required": true,
+      "options": [
+        "manufacturing",
+        "financial_services",
+        "technology",
+        "healthcare",
+        "real_estate",
+        "hospitality_travel",
+        "nonprofit_education",
+        "professional_services",
+        "retail"
+      ]
+    },
+    {
+      "field": "target_segment",
+      "type": "multiselect",
+      "required": true,
+      "options": [
+        "type_3",
+        "type_4",
+        "standard"
+      ]
+    },
+    {
+      "field": "offer_topic",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "channels",
+      "type": "list",
+      "required": true
+    },
+    {
+      "field": "timeline_start",
+      "type": "date",
+      "required": true
+    },
+    {
+      "field": "timeline_end",
+      "type": "date",
+      "required": true
+    },
+    {
+      "field": "owner",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "budget_flag",
+      "type": "boolean",
+      "required": true
+    },
+    {
+      "field": "requester",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "free_text_context",
+      "type": "text",
+      "required": false
+    }
   ],
   "policyRules": [
-    { "id": "missing_mandatory_fields", "condition": "any mandatory brief-template field is missing or ambiguous", "resultActionClass": "request_gaps" },
-    { "id": "bc_fo_mixed", "condition": "request mixes Business Central and F&O in one campaign concept", "resultActionClass": "flag_bc_fo_mix" },
-    { "id": "fresh_duplicate", "condition": "open campaign with same BU + vertical + overlapping topic and window (fresh record)", "resultActionClass": "flag_duplicate" }
+    {
+      "id": "missing_mandatory_fields",
+      "condition": "any mandatory brief-template field is missing or ambiguous",
+      "resultActionClass": "request_gaps"
+    },
+    {
+      "id": "bc_fo_mixed",
+      "condition": "request mixes Business Central and F&O in one campaign concept",
+      "resultActionClass": "flag_bc_fo_mix"
+    },
+    {
+      "id": "fresh_duplicate",
+      "condition": "open campaign with same BU + vertical + overlapping topic and window (fresh record)",
+      "resultActionClass": "flag_duplicate"
+    }
   ],
   "actionClassTaxonomy": [
-    { "id": "route_for_approval", "label": "Route brief for approval", "description": "Brief is complete, validated and classified; assemble the Word brief and route it to the BU Campaign Lead for explicit approval." },
-    { "id": "request_gaps", "label": "Request missing information", "description": "Mandatory brief fields are missing or ambiguous; send the requester targeted questions and hold the brief in awaiting_input." },
-    { "id": "flag_bc_fo_mix", "label": "Flag BC/F&O mix", "description": "The request combines Business Central and F&O in one campaign concept; propose a split and hold for a human decision — never merge silently." },
-    { "id": "flag_duplicate", "label": "Flag duplicate/conflict", "description": "An open campaign overlaps this request (BU, vertical, topic, window); surface the conflicting campaign ids for a human decision." },
-    { "id": "escalate_unclassifiable", "label": "Escalate unclassifiable request", "description": "BU or vertical cannot be classified from the request and its sources; escalate to the Marketing Lead / Manager." }
+    {
+      "id": "route_for_approval",
+      "label": "Route brief for approval",
+      "description": "Brief is complete, validated and classified; assemble the Word brief and route it to the BU Campaign Lead for explicit approval."
+    },
+    {
+      "id": "request_gaps",
+      "label": "Request missing information",
+      "description": "Mandatory brief fields are missing or ambiguous; send the requester targeted questions and hold the brief in awaiting_input."
+    },
+    {
+      "id": "flag_bc_fo_mix",
+      "label": "Flag BC/F&O mix",
+      "description": "The request combines Business Central and F&O in one campaign concept; propose a split and hold for a human decision — never merge silently."
+    },
+    {
+      "id": "flag_duplicate",
+      "label": "Flag duplicate/conflict",
+      "description": "An open campaign overlaps this request (BU, vertical, topic, window); surface the conflicting campaign ids for a human decision."
+    },
+    {
+      "id": "escalate_unclassifiable",
+      "label": "Escalate unclassifiable request",
+      "description": "BU or vertical cannot be classified from the request and its sources; escalate to the Marketing Lead / Manager."
+    }
   ],
   "authorityEnvelope": {
     "impactCeiling": {
@@ -44,9 +140,18 @@
     "complianceCeiling": "pricing, legal or partner commitments always route to a human"
   },
   "routingMap": [
-    { "uncertaintyType": "data_ambiguity", "routesTo": "requester" },
-    { "uncertaintyType": "policy_gap", "routesTo": "marketing-lead-queue" },
-    { "uncertaintyType": "confidence_only", "routesTo": "bu-campaign-lead-queue" }
+    {
+      "uncertaintyType": "data_ambiguity",
+      "routesTo": "requester"
+    },
+    {
+      "uncertaintyType": "policy_gap",
+      "routesTo": "marketing-lead-queue"
+    },
+    {
+      "uncertaintyType": "confidence_only",
+      "routesTo": "bu-campaign-lead-queue"
+    }
   ],
   "tierThresholds": {
     "tier1": "missing or ambiguous mandatory fields — gap request to the requester",

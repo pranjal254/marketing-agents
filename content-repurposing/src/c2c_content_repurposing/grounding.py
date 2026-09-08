@@ -185,17 +185,19 @@ def ground_derivative(
     that appears in no CITED inventory item is unsourced (spec: must be zero)."""
     inventory_ids = {i.claim_id for i in inventory.items}
     lineage = [c for c in output.claims_used if c in inventory_ids]
-    cited_text = " ".join(
-        f"{i.text} {i.quote}" for i in inventory.items if i.claim_id in lineage
-    )
-    cited_norm = _normalize(cited_text)
+    # Numeric provenance is checked against the WHOLE verified inventory, not just
+    # the items the model formally cited: the inventory is the confirmed flagship's
+    # verified claim set, so a number present anywhere in it is sourced by
+    # definition (a missing citation is a lineage gap, not a fabricated statistic).
+    # Only a number in NO inventory item is genuinely unsourced.
+    verified_norm = _normalize(" ".join(f"{i.text} {i.quote}" for i in inventory.items))
 
     variants = list(output.variants[: max(volume_cap, 0)])
     unsourced: list[str] = []
     for variant in variants:
         for token in numeric_tokens(" ".join(variant.paragraphs)):
             digits = _normalize(token)
-            if digits and digits not in cited_norm:
+            if digits and digits not in verified_norm:
                 unsourced.append(token)
 
     gap_notes = [

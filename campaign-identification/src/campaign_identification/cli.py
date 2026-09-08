@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from shiftai_shared.brand import load_brand_rules
 from shiftai_shared.business_capability import load_decision_config
 from shiftai_shared.config import load_settings
 from shiftai_shared.context_store import SqliteContextStore
@@ -48,6 +49,7 @@ def build_agent(workdir: Path) -> CampaignIdentificationAgent:
         idempotency=SqliteIdempotencyStore(str(workdir / "idempotency.sqlite")),
         config=load_decision_config(DEFAULT_CONFIG),
         settings=settings,
+        brand_rules=load_brand_rules(),
     )
     return CampaignIdentificationAgent(deps)
 

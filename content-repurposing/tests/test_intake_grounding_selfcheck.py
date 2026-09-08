@@ -226,3 +226,21 @@ def test_selfcheck_warnings_do_not_fail() -> None:
     # Overuse/avoid terms are warnings for the reviewer, not generation blockers.
     report = run_self_check("A seamless experience", RULES, unsourced_numeric_tokens=[])
     assert report.passed or all(f["severity"] == "warning" for f in report.findings)
+
+
+def test_brand_mention_check_uses_the_active_pack() -> None:
+    """The AEO brand-mention rule follows the ACTIVE rules pack — under the
+    DemandBlue pack a FAQ naming DemandBlue passes; naming only LevelShift fails."""
+    from shiftai_shared.brand import load_brand_rules
+
+    from c2c_content_repurposing.selfcheck import run_self_check
+
+    db_rules = load_brand_rules("demandblue")
+    text = "Q: Who delivers this? A: DemandBlue scopes and delivers the work."
+    ok = run_self_check(text, db_rules, unsourced_numeric_tokens=[], must_name_brand=True)
+    assert ok.passed and not ok.missing_brand_mention
+    wrong = run_self_check(
+        "Q: Who delivers this? A: LevelShift scopes and delivers the work.",
+        db_rules, unsourced_numeric_tokens=[], must_name_brand=True,
+    )
+    assert wrong.missing_brand_mention and not wrong.passed

@@ -106,6 +106,20 @@ def register_review_routes(app: FastAPI, bridge: Any) -> None:
     def confirm_content(campaign_id: str, asset_id: str, body: ConfirmIn) -> dict[str, Any]:
         """THE human gate: content_confirmed with identity. Signals fire from the
         agent (flagship → fan-out unlock; derivative → packaging registration)."""
+        latest = rp_db.latest_draft(bridge().store, campaign_id, asset_id)
+        if latest is not None and latest.status == "withheld":
+            reasons = ", ".join(f["rule_id"] for f in latest.self_check.findings) or (
+                "missing brand mention" if latest.self_check.missing_brand_mention
+                else "self-check failure"
+            )
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"the latest draft (v{latest.version}) of {asset_id!r} was WITHHELD "
+                    f"by the agent's self-check ({reasons}) — run a revision round or "
+                    "rework that fixes it before confirming"
+                ),
+            )
         try:
             with bridge().run_lock:
                 state = collab().confirm_content(

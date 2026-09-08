@@ -485,6 +485,9 @@ class CollaborationAgent:
             "filename": docs.revised_filename(slug, draft.asset_type, version),
             "rework_of_version": draft.version,
             "self_check": report,
+            # Status is EARNED by this version's own self-check — never inherited
+            # (a revision of a withheld draft that now passes must stage).
+            "status": "staged" if report.passed else "withheld",
             "created_at": db.now_iso(),
         })
         try:

@@ -284,8 +284,26 @@ class ContentRepurposingAgent:
                         "unsourced_numeric_tokens": report.unsourced_numeric_tokens},
             )
 
-        staged = bool(sections) and report.passed
+        # Stage whenever the flagship has body sections, carrying self-check flags
+        # as review material (the review cycle + human confirm + Quality Gate are
+        # the authority). Only a bodyless draft is withheld. A staged flagship with
+        # zero verified markers still escalated above, so nothing sourced is lost.
+        staged = bool(sections)
         version = self._next_version(campaign_id, flagship_id)
+        if staged and not report.passed:
+            gap_notes = [
+                *gap_notes,
+                GapNote(
+                    gap_id=f"gap_{campaign_id}_{flagship_id}_review",
+                    asset_id=flagship_id,
+                    section="(review flags)",
+                    needed=(
+                        "staged for review with open self-check flags "
+                        f"({_flag_summary(report)}); a reviewer confirms, runs a revision "
+                        "round, or requests rework. The Quality Gate is the final check."
+                    ),
+                ),
+            ]
         draft = StagedDraft(
             campaign_id=campaign_id,
             asset_id=flagship_id,
@@ -518,6 +536,7 @@ class ContentRepurposingAgent:
 
         staged: list[StagedDraft] = []
         withheld: list[str] = []
+        flagged: list[str] = []  # staged but self-check not clean — open review flags
         gap_notes: list[GapNote] = []
 
         def worker(job: DerivativeJob) -> None:
@@ -528,6 +547,8 @@ class ContentRepurposingAgent:
             gap_notes.extend(draft.gap_notes)
             if draft.status == "staged":
                 staged.append(draft)
+                if not draft.self_check.passed:
+                    flagged.append(job.asset_id)
             else:
                 withheld.append(job.asset_id)
             self._check_budget(ctx, FANOUT_TIMEOUT_S)
@@ -535,13 +556,14 @@ class ContentRepurposingAgent:
         run_fanout_jobs(jobs, worker)
 
         escalations: list[str] = []
-        if withheld:
+        if withheld or flagged:
             escalations.append("selfcheck_failed")
             self._escalation_event(
                 ctx, tier=2, reason_code="selfcheck_failed",
-                detail={"withheld_assets": withheld,
-                        "note": "failed self-check after regeneration — never staged; "
-                                "the passing subset is staged with gap notes for the rest"},
+                detail={"withheld_assets": withheld, "flagged_assets": flagged,
+                        "note": "self-check flags after regeneration — flagged assets are "
+                                "staged for review (Quality Gate is the authority); "
+                                "bodyless output, if any, is withheld with a gap note"},
             )
         db.save_gap_notes(deps.store, campaign_id, gap_notes)
         db.save_case(deps.store, campaign_id, {
@@ -715,7 +737,12 @@ class ContentRepurposingAgent:
                 break
             feedback = failure_feedback(report)
 
-        staged = report.passed and bool(variants_sections)
+        # The generation self-check is a PRE-FILTER, not the authority: the review
+        # cycle, the human confirm and the Quality Gate are. So whenever there is
+        # renderable content we STAGE it and carry any residual self-check findings
+        # as review flags, rather than dead-ending the asset with no path forward.
+        # Only genuinely unusable output (no variants at all) is withheld.
+        staged = bool(variants_sections)
         version = self._next_version(campaign_id, job.asset_id)
         if not staged:
             gap_notes = [
@@ -725,8 +752,22 @@ class ContentRepurposingAgent:
                     asset_id=job.asset_id,
                     section="(whole asset)",
                     needed=(
-                        f"self-check failures persist after {report.attempts} attempt(s) — "
-                        "asset withheld, human drafting or rework needed"
+                        f"the model produced no usable variant after {report.attempts} "
+                        "attempt(s) — request rework with a specific instruction"
+                    ),
+                ),
+            ]
+        elif not report.passed:
+            gap_notes = [
+                *gap_notes,
+                GapNote(
+                    gap_id=f"gap_{campaign_id}_{job.asset_id}_review",
+                    asset_id=job.asset_id,
+                    section="(review flags)",
+                    needed=(
+                        "staged for review with open self-check flags "
+                        f"({_flag_summary(report)}); a reviewer confirms, runs a revision "
+                        "round, or requests rework. The Quality Gate is the final check."
                     ),
                 ),
             ]
@@ -1122,6 +1163,16 @@ def _now() -> str:
 
 def _digits(token: str) -> str:
     return "".join(ch for ch in token if ch.isdigit() or ch == ".")
+
+
+def _flag_summary(report: SelfCheckReport) -> str:
+    """A short, human-readable summary of open self-check flags for a review note."""
+    parts = [f["rule_id"] for f in report.findings if f.get("severity") == "error"]
+    if report.unsourced_numeric_tokens:
+        parts.append("numbers to source: " + ", ".join(report.unsourced_numeric_tokens))
+    if report.missing_brand_mention:
+        parts.append("name the brand in answer-extractable text")
+    return "; ".join(parts) or "advisory only"
 
 
 def _elapsed_ms(since_iso: str) -> int:

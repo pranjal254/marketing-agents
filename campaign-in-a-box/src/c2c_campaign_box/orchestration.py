@@ -61,7 +61,7 @@ from c2c_campaign_box.grounding import (
     valid_source_refs,
 )
 from c2c_campaign_box.intake import BriefNotApprovedError, load_approved_brief
-from c2c_campaign_box.intel import IntelSource, gather_intel
+from c2c_campaign_box.intel import INTEL_LIBRARY_PATH, IntelSource, gather_intel
 from c2c_campaign_box.models import (
     AssetChecklist,
     AssetChecklistItem,
@@ -115,6 +115,10 @@ class OrchestratorDeps:
     config: OrchestratorConfig
     settings: SharedSettings
     brand_rules: BrandRules
+    # Curated-library folder as the workspace binding understands it. The default
+    # matches the standard OneDrive layout; dev bridges may point at an external
+    # marketing folder (the local binding accepts an absolute path).
+    intel_library_path: str = INTEL_LIBRARY_PATH
 
 
 class CampaignBoxOrchestrator:
@@ -184,7 +188,9 @@ class CampaignBoxOrchestrator:
 
         # ---- Step 2: sourced intel (fallback flagged, never silent) ---------------
         with ctx.span("intel-gathering", "api") as intel_span:
-            bundle = gather_intel(brief.topic, deps.workspace, deps.intel_source)
+            bundle = gather_intel(
+                brief.topic, deps.workspace, deps.intel_source, deps.intel_library_path
+            )
         self._emit(
             ctx,
             "tool_execution",
@@ -403,6 +409,17 @@ class CampaignBoxOrchestrator:
                 tracker_ref = self._upload_once(
                     ctx, f"{campaign_id}:tracker:v{plan.version}", folder,
                     docs.tracker_filename(plan), docs.tracker_csv(plan, checklist),
+                )
+                # The approved brief travels with the campaign: a rendered
+                # snapshot lands in brief/ (the Context Store record stays
+                # authoritative).
+                self._upload_once(
+                    ctx, f"{campaign_id}:brief_snapshot:v{pack.version}",
+                    f"{folder}/brief",
+                    docs.brief_filename(campaign_id, pack.version),
+                    docs.brief_docx(
+                        campaign_id, brief.fields, brief.provenance, brief.doc_ref
+                    ),
                 )
         except WorkspaceWriteError as exc:
             self._escalation_event(

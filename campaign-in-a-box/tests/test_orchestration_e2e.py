@@ -257,3 +257,17 @@ def test_post_packaging_edit_without_reopen_halts(
     halted = orchestrator.run_packaging(CAMPAIGN_ID)
     assert halted.status == "packaging_blocked"
     assert halted.escalation_reasons == ["hash_mismatch"]
+
+
+def test_brief_snapshot_lands_in_the_brief_folder(
+    orchestrator: CampaignBoxOrchestrator,
+) -> None:
+    """The campaign folder is self-contained: planning renders the approved brief
+    into brief/ (the Context Store record stays authoritative)."""
+    outcome = run_plan(orchestrator)
+    assert outcome.status != "escalated"
+    root = Path(orchestrator.deps.workspace.root)
+    campaign_dir = next(p for p in root.iterdir() if p.is_dir() and "Q" in p.name)
+    briefs = list((campaign_dir / "brief").glob("*.docx"))
+    assert len(briefs) == 1
+    assert "approved-brief" in briefs[0].name

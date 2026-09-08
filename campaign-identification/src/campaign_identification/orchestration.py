@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from shiftai_shared.brand import BrandRules
 from shiftai_shared.business_capability import DecisionAgentConfig
 from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
@@ -93,6 +94,7 @@ class AgentDeps:
     idempotency: IdempotencyStore
     config: DecisionAgentConfig
     settings: SharedSettings
+    brand_rules: BrandRules | None = None  # powers the brief's Insights section
 
 
 class CampaignIdentificationAgent:
@@ -454,12 +456,43 @@ class CampaignIdentificationAgent:
             doc_ref=doc_ref,
         )
 
+    def _brief_notes(self, case_id: str) -> tuple[brief_mod.BriefNote, ...]:
+        """Human commentary the agent has on record for this case: the original
+        request, and any revision directive the requester issued (identity kept)."""
+        case = db.load_case(self.deps.store, case_id) or {}
+        notes: list[brief_mod.BriefNote] = []
+        request = case.get("request") or {}
+        original = str(request.get("free_text_context") or "").strip()
+        if original:
+            notes.append(brief_mod.BriefNote(
+                author=str(request.get("requester") or "Requester"),
+                context="Original request", text=original,
+            ))
+        directive = case.get("last_directive") or {}
+        directive_note = str(directive.get("note") or "").strip()
+        aspects = directive.get("aspects") or []
+        if directive_note or aspects:
+            detail = directive_note or f"Requested changes: {', '.join(aspects)}"
+            notes.append(brief_mod.BriefNote(
+                author=str(directive.get("by") or "Reviewer"),
+                context="Revision directive", text=detail,
+            ))
+        returned = str(case.get("returned_note") or "").strip()
+        if returned:
+            notes.append(brief_mod.BriefNote(
+                author="BU Campaign Lead", context="Returned for revision", text=returned,
+            ))
+        return tuple(notes)
+
     def _upload_brief(self, ctx: RunContext, campaign_brief: CampaignBrief) -> str:
         """Idempotent workspace write of one brief version (no LLM)."""
         key = f"{ctx.case_id}:draft_brief:v{campaign_brief.version}"
+        notes = self._brief_notes(ctx.case_id)
 
         def side_effect() -> dict[str, Any]:
-            docx_bytes = brief_mod.brief_docx(campaign_brief)
+            docx_bytes = brief_mod.brief_docx(
+                campaign_brief, brand_rules=self.deps.brand_rules, notes=notes,
+            )
             with ctx.span("workspace-upload", "api") as upload_span:
                 ref = self.deps.workspace.upload_document(
                     brief_mod.brief_filename(campaign_brief), docx_bytes

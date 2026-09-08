@@ -21,7 +21,7 @@ from c2c_campaign_box.workspace import CampaignWorkspace
 
 INTEL_LIBRARY_PATH = "02-Reference/intel-library"
 _TEXT_SUFFIXES = (".md", ".txt")
-_EXCERPT_CHARS = 400
+_EXCERPT_CHARS = 800  # a full practice note (proof point first) fits one signal
 
 
 class IntelSource(Protocol):
@@ -78,10 +78,10 @@ def _semrush_signals(signal: TopicSignal) -> list[IntelSignal]:
     return out
 
 
-def _library_signals(workspace: CampaignWorkspace) -> list[IntelSignal]:
+def _library_signals(workspace: CampaignWorkspace, library_path: str) -> list[IntelSignal]:
     ts = utc_now_iso()
     out: list[IntelSignal] = []
-    for i, file in enumerate(workspace.list_files(INTEL_LIBRARY_PATH)):
+    for i, file in enumerate(workspace.list_files(library_path)):
         excerpt = ""
         if file.name.lower().endswith(_TEXT_SUFFIXES):
             try:
@@ -106,10 +106,16 @@ def gather_intel(
     topic: str,
     workspace: CampaignWorkspace,
     source: IntelSource | None,
+    library_path: str = INTEL_LIBRARY_PATH,
 ) -> IntelBundle:
     """Assemble the sourced intel bundle. ``source=None`` (no key) or a SemRush
-    failure → intel-library-only mode with the failure reason recorded."""
-    signals = _library_signals(workspace)
+    failure → intel-library-only mode with the failure reason recorded.
+
+    ``library_path`` is the curated-library folder as the workspace binding
+    understands it (workspace-relative by default; the local dev binding also
+    accepts an absolute path, letting the bridge point at an external
+    marketing folder without moving files)."""
+    signals = _library_signals(workspace, library_path)
     if source is None:
         return IntelBundle(
             topic=topic,

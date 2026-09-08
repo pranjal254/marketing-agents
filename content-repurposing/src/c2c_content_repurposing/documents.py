@@ -35,9 +35,9 @@ def draft_docx(draft: StagedDraft) -> bytes:
         sections.append(
             DocSection(
                 heading="Claim provenance (inline markers)",
-                table_header=("Marker", "Claim — source"),
-                table_rows=tuple(
-                    (m.marker, f"{m.claim} — {m.source_ref}") for m in draft.claim_markers
+                columns=("Marker", "Claim", "Source"),
+                grid=tuple(
+                    (m.marker, m.claim, m.source_ref) for m in draft.claim_markers
                 ),
             )
         )
@@ -56,11 +56,26 @@ def draft_docx(draft: StagedDraft) -> bytes:
                 table_rows=tuple((g.section, g.needed) for g in draft.gap_notes),
             )
         )
+    kind_label = "Flagship" if draft.kind == "flagship" else "Derivative"
     subtitle = (
-        f"Campaign {draft.campaign_id} · {draft.asset_type} · DRAFT v{draft.version}"
-        f" · staged for human review — the Content Repurposing Agent never publishes"
+        f"{draft.asset_type}  |  Draft v{draft.version}  |  staged for human review"
     )
-    return build_docx(DocSpec(title=draft.title, subtitle=subtitle, sections=tuple(sections)))
+    meta = (
+        ("Campaign ID", draft.campaign_id),
+        ("Asset", f"{draft.asset_type} ({kind_label})"),
+        ("Draft version", f"v{draft.version}"),
+        ("Status", draft.status),
+        ("Prepared by", "Content Repurposing Agent (draft, never published by the agent)"),
+    )
+    return build_docx(
+        DocSpec(
+            kicker=f"{kind_label} content draft",
+            title=draft.title,
+            subtitle=subtitle,
+            meta=meta,
+            sections=tuple(sections),
+        )
+    )
 
 
 def claim_map_json(draft: StagedDraft) -> bytes:

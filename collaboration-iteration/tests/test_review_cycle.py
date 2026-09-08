@@ -287,3 +287,30 @@ def test_revision_doc_lands_in_workspace_with_edit_summary(
     assert isinstance(workspace, LocalCampaignWorkspace)
     names = {f.name for f in workspace.list_files(f"{FOLDER}/drafts")}
     assert "review-test-linkedin-posts-v2.docx" in names
+
+
+def test_revision_of_withheld_draft_earns_staged_status(
+    agent, provider, store, sink,
+) -> None:
+    """Status is earned by each version's own self-check, never inherited: a
+    revision of a WITHHELD draft that now passes must stage (and re-enter
+    review) — the withheld status must not stick to the chain."""
+    from c2c_content_repurposing.persistence import latest_draft, save_draft
+
+    from tests.conftest import CAMPAIGN_ID, make_draft
+
+    withheld = make_draft("linkedin_posts", "linkedin_posts").model_copy(
+        update={"status": "withheld"}
+    )
+    save_draft(store, withheld)
+    agent.on_draft_staged(CAMPAIGN_ID, "linkedin_posts")
+    agent.add_feedback(
+        CAMPAIGN_ID, "linkedin_posts",
+        reviewer_id="jen", reviewer_role="content-writer",
+        section="CTA", text="Make the CTA shorter",
+    )
+    outcome = agent.run_review_round(CAMPAIGN_ID, "linkedin_posts", actor_id="jen")
+    assert outcome.round is not None and outcome.round.new_version == 2
+    revised = latest_draft(store, CAMPAIGN_ID, "linkedin_posts")
+    assert revised is not None and revised.version == 2
+    assert revised.status == "staged"  # earned by its own passing self-check

@@ -18,12 +18,14 @@ import os
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
 from c2c_campaign_box import MODEL_ID as BOX_MODEL_ID
 from c2c_collaboration import MODEL_ID as COLLAB_MODEL_ID
 from c2c_content_repurposing import MODEL_ID as REPURPOSE_MODEL_ID
+from c2c_quality_gate import MODEL_ID as GATE_MODEL_ID
 from campaign_identification import MODEL_ID
 from campaign_identification.approval import ApprovalGateError
 from campaign_identification.orchestration import AgentDeps, CampaignIdentificationAgent
@@ -47,6 +49,7 @@ from shiftai_shared.context_store import (
 from shiftai_shared.control_plane import KillSwitch, RateBreaker
 from shiftai_shared.llm import build_provider
 from shiftai_shared.telemetry import JsonlSink
+from shiftai_shared.users import build_user_directory
 
 from c2c_bridge.bus import TeeSink, TelemetryBus
 from c2c_bridge.seed import seed_dev_workspace
@@ -58,8 +61,55 @@ REPURPOSE_CONFIG_PATH = AGENTS_ROOT / "content-repurposing" / "config" / "conten
 COLLAB_CONFIG_PATH = (
     AGENTS_ROOT / "collaboration-iteration" / "config" / "collaboration_iteration.json"
 )
+GATE_CONFIG_PATH = AGENTS_ROOT / "quality-gate" / "config" / "quality_gate.json"
 DEFAULT_WORKDIR = AGENTS_ROOT / "bridge" / ".bridge-run"
 DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+
+
+def _env_path(name: str, default: Path) -> Path:
+    """A path-valued env override; blank/unset keeps the packaged default."""
+    value = os.environ.get(name, "").strip()
+    return Path(value) if value else default
+
+
+@dataclass(frozen=True)
+class BindingPaths:
+    """Where Agents 2-4 read and write documents for this session.
+
+    Default: a per-session sandbox under the bridge workdir, seeded with clearly
+    synthetic dev samples. C2C_MARKETING_ROOT set → bind to the marketing team's
+    real folder tree ({root}/campaign|repository|references/intel-library); the
+    dev seed is then skipped so the real folder never receives synthetic files.
+    Writes stay additive-only either way (workspace guardrail 3)."""
+
+    box_workspace: Path
+    repository: Path
+    intel_library: str  # as the workspace binding understands it (abs ok locally)
+    marketing_root: Path | None  # None → sandboxed dev session
+
+
+def resolve_binding_paths(workdir: Path, marketing_root: str | None = None) -> BindingPaths:
+    root = (
+        marketing_root if marketing_root is not None else os.environ.get("C2C_MARKETING_ROOT", "")
+    ).strip()
+    if root:
+        base = Path(root).expanduser().resolve()
+        if not base.is_dir():
+            raise FileNotFoundError(f"C2C_MARKETING_ROOT does not exist: {base}")
+        return BindingPaths(
+            box_workspace=base / "campaign",
+            repository=base / "repository",
+            intel_library=str(base / "references" / "intel-library"),
+            marketing_root=base,
+        )
+    from c2c_campaign_box.intel import INTEL_LIBRARY_PATH
+
+    return BindingPaths(
+        box_workspace=workdir / "box-workspace",
+        repository=workdir / "repository",
+        intel_library=INTEL_LIBRARY_PATH,
+        marketing_root=None,
+    )
 
 
 class Bridge:
@@ -83,11 +133,22 @@ class Bridge:
         self.workdir = workdir
         self.settings = settings
         self.bus = TelemetryBus()
+        # Business-unit selection is a deployment decision, not agent code:
+        # C2C_BRAND_PACK picks the committed brand rules pack; C2C_*_CONFIG point
+        # at a BU-specific versioned config (e.g. *.demandblue.json).
+        self.brand_pack = os.environ.get("C2C_BRAND_PACK", "").strip() or "levelshift"
+        brand_rules = load_brand_rules(self.brand_pack)
+        box_config_path = _env_path("C2C_BOX_CONFIG", BOX_CONFIG_PATH)
+        repurpose_config_path = _env_path("C2C_REPURPOSE_CONFIG", REPURPOSE_CONFIG_PATH)
+        collab_config_path = _env_path("C2C_COLLAB_CONFIG", COLLAB_CONFIG_PATH)
         # Backend is an environment decision: DATABASE_URL set → tenant-scoped
         # Postgres (state + idempotency survive restarts); unset → per-session
         # SQLite exactly as before. Agents are unaware either way.
         self.store_backend = store_backend(settings)
         self.store = build_context_store(settings, str(workdir / "context-store.sqlite"))
+        # Workspace user directory: Postgres table in a deployment, in-memory
+        # defaults in local dev. Seeded with the five default users on first use.
+        self.users = build_user_directory(settings)
         self.workspace_dir = workdir / "workspace"
         self.kill_switch = KillSwitch()
         sink = TeeSink(JsonlSink(str(workdir / "telemetry.jsonl")), self.bus)
@@ -104,15 +165,20 @@ class Bridge:
                 idempotency=idempotency,
                 config=config,
                 settings=settings,
+                brand_rules=brand_rules,
             )
         )
-        # Agent 2 — dev bindings: local campaign workspace + seeded sample
-        # repository / intel library; SemRush only when a key is configured
-        # (otherwise intel-library-only fallback, flagged per spec).
-        self.box_workspace_dir = workdir / "box-workspace"
-        repository_dir = workdir / "repository"
-        seed_dev_workspace(self.box_workspace_dir, repository_dir)
-        box_config = load_orchestrator_config(BOX_CONFIG_PATH)
+        # Agent 2 — document bindings: sandboxed per-session dev workspace with
+        # synthetic seed data, OR the marketing team's real folder tree when
+        # C2C_MARKETING_ROOT is set (never seeded). SemRush only when a key is
+        # configured (otherwise intel-library-only fallback, flagged per spec).
+        paths = resolve_binding_paths(workdir)
+        self.binding_paths = paths
+        self.box_workspace_dir = paths.box_workspace
+        repository_dir = paths.repository
+        if paths.marketing_root is None:
+            seed_dev_workspace(self.box_workspace_dir, repository_dir, brand_rules)
+        box_config = load_orchestrator_config(box_config_path)
         intel_source = None
         if settings.semrush_api_key is not None:
             intel_source = SemrushClient(
@@ -134,7 +200,8 @@ class Bridge:
                 idempotency=idempotency,
                 config=box_config,
                 settings=settings,
-                brand_rules=load_brand_rules(),
+                brand_rules=brand_rules,
+                intel_library_path=paths.intel_library,
             )
         )
         # Agent 3 — shares the store, telemetry stream, kill switch and the SAME
@@ -154,9 +221,9 @@ class Bridge:
                 kill_switch=self.kill_switch,
                 rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
                 idempotency=idempotency,
-                config=load_repurposing_config(REPURPOSE_CONFIG_PATH),
+                config=load_repurposing_config(repurpose_config_path),
                 settings=settings,
-                brand_rules=load_brand_rules(),
+                brand_rules=brand_rules,
             )
         )
         # Agent 4 — the review-cycle manager. Its outbound signals bind to the
@@ -177,10 +244,35 @@ class Bridge:
                 kill_switch=self.kill_switch,
                 rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
                 idempotency=idempotency,
-                config=load_collaboration_config(COLLAB_CONFIG_PATH),
+                config=load_collaboration_config(collab_config_path),
                 settings=settings,
-                brand_rules=load_brand_rules(),
+                brand_rules=brand_rules,
                 signals=BridgeSignals(lambda: self),
+            )
+        )
+        # Agent 5 — the Quality Gate & Approval terminal: gates the package
+        # manifest, routes the retained human gates (Grammar QA → BU Lead
+        # sign-off), locks approved versions. Its signals bind failures back to
+        # Agent 4 (with findings) and re-open Agent 2's packaging case.
+        from c2c_quality_gate.agent_config import load_quality_gate_config
+        from c2c_quality_gate.orchestration import QualityGateAgent, QualityGateDeps
+
+        from c2c_bridge.signals import GateSignals
+
+        gate_config_path = _env_path("C2C_GATE_CONFIG", GATE_CONFIG_PATH)
+        self.gate = QualityGateAgent(
+            QualityGateDeps(
+                provider=build_provider(settings),
+                store=self.store,
+                workspace=LocalCampaignWorkspace(str(self.box_workspace_dir)),
+                sink=sink,
+                kill_switch=self.kill_switch,
+                rate_breaker=RateBreaker(window_minutes=60, max_auto_executions=100),
+                idempotency=idempotency,
+                config=load_quality_gate_config(gate_config_path),
+                settings=settings,
+                brand_rules=brand_rules,
+                signals=GateSignals(lambda: self),
             )
         )
         # One case at a time keeps SQLite happy and mirrors event-driven invocation.
@@ -222,6 +314,19 @@ class DecisionIn(BaseModel):
 class KillSwitchIn(BaseModel):
     paused: bool
     reason: str = "paused from studio UI"
+
+
+class UserIn(BaseModel):
+    name: str = Field(min_length=1)
+    email: str = Field(min_length=3)
+    role: str = Field(min_length=1)
+
+
+class UserPatchIn(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    role: str | None = None
+    status: str | None = None
 
 
 def _case_summary(key: str, value: dict[str, Any]) -> dict[str, Any]:
@@ -314,6 +419,12 @@ def create_app(
             "provider": bridge().settings.llm_provider,
             "model": MODEL_ID,
             "store": bridge().store_backend,
+            "brand_pack": bridge().brand_pack,
+            "marketing_root": (
+                str(bridge().binding_paths.marketing_root)
+                if bridge().binding_paths.marketing_root is not None
+                else None
+            ),
             "environment": bridge().settings.shiftai_environment,
             "kill_switch": (
                 "paused"
@@ -334,6 +445,12 @@ def create_app(
             "reason_codes": config.reason_codes,
             "provider": bridge().settings.llm_provider,
             "model": MODEL_ID,
+            "brand_pack": bridge().brand_pack,
+            "marketing_root": (
+                str(bridge().binding_paths.marketing_root)
+                if bridge().binding_paths.marketing_root is not None
+                else None
+            ),
             "box": {
                 "agent_id": bridge().box.deps.config.agent_id,
                 "agent_name": "Campaign-in-a-Box Orchestrator",
@@ -372,6 +489,20 @@ def create_app(
                     for gate, slots in bridge().collab.deps.config.reviewer_map.items()
                 },
                 "reason_codes": bridge().collab.deps.config.reason_codes,
+            },
+            "quality_gate": {
+                "agent_id": bridge().gate.deps.config.agent_id,
+                "agent_name": "Quality Gate & Approval Agent",
+                "config_version": bridge().gate.deps.config.version,
+                "model": GATE_MODEL_ID,
+                "policy_status": bridge().gate.deps.config.policy_status,
+                "distribution_classes": bridge().gate.deps.config.distribution_classes,
+                "review_sequences": {
+                    cls: [s.model_dump() for s in steps]
+                    for cls, steps in bridge().gate.deps.config.review_sequences.items()
+                },
+                "package_signoff": bridge().gate.deps.config.package_signoff.model_dump(),
+                "reason_codes": bridge().gate.deps.config.reason_codes,
             },
         }
 
@@ -448,6 +579,7 @@ def create_app(
             bridge().box.deps.config.agent_id,
             bridge().repurposer.deps.config.agent_id,
             bridge().collab.deps.config.agent_id,
+            bridge().gate.deps.config.agent_id,
         )
         for agent_id in agent_ids:
             if body.paused:
@@ -462,6 +594,30 @@ def create_app(
         session data stays on disk (append-only discipline holds even in dev)."""
         holder["bridge"] = Bridge(_new_session_dir(root), app_settings)
         return {"status": "reset", "workdir": str(holder["bridge"].workdir)}
+
+    # ------------------------------------------------------------------ users
+    @app.get("/api/users")
+    def list_users() -> list[dict[str, Any]]:
+        return [u.model_dump() for u in bridge().users.list_users()]
+
+    @app.post("/api/users")
+    def create_user(body: UserIn) -> dict[str, Any]:
+        user = bridge().users.create(body.name.strip(), body.email.strip(), body.role.strip())
+        return user.model_dump()
+
+    @app.patch("/api/users/{user_id}")
+    def update_user(user_id: str, body: UserPatchIn) -> dict[str, Any]:
+        patch = {k: v for k, v in body.model_dump().items() if v is not None}
+        user = bridge().users.update(user_id, patch)
+        if user is None:
+            raise HTTPException(status_code=404, detail=f"unknown user {user_id}")
+        return user.model_dump()
+
+    @app.delete("/api/users/{user_id}")
+    def delete_user(user_id: str) -> dict[str, str]:
+        if not bridge().users.remove(user_id):
+            raise HTTPException(status_code=404, detail=f"unknown user {user_id}")
+        return {"status": "removed", "id": user_id}
 
     # ------------------------------------------------------------------ reads
     @app.get("/api/cases")
@@ -539,6 +695,11 @@ def create_app(
 
     register_review_routes(app, bridge)
 
+    # ------------------------------------------ Agent 5: Quality Gate & Approval
+    from c2c_bridge.gate_routes import register_gate_routes
+
+    register_gate_routes(app, bridge)
+
     return app
 
 
@@ -547,4 +708,20 @@ def _gate_http_error(exc: ApprovalGateError) -> HTTPException:
     return HTTPException(status_code=status, detail=str(exc))
 
 
-app = create_app()
+# Dev entry (uvicorn c2c_bridge.app:app): the served app is built LAZILY via
+# PEP 562 so importing this module (tests, tooling) never opens stores or reads
+# the developer's .env. Only serving does. Deployment bindings (C2C_*) may live
+# in Agents/.env beside the provider secrets; real environment variables win.
+_app_instance: FastAPI | None = None
+
+
+def __getattr__(name: str) -> FastAPI:
+    global _app_instance
+    if name == "app":
+        if _app_instance is None:
+            from dotenv import load_dotenv
+
+            load_dotenv(AGENTS_ROOT / ".env", override=False)
+            _app_instance = create_app()
+        return _app_instance
+    raise AttributeError(name)
