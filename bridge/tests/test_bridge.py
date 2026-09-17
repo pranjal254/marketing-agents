@@ -250,3 +250,27 @@ def test_intake_hold_revise_release_return_flow(client: TestClient) -> None:
         json={"decision": "approved", "actor_id": "lead@x.com"},
     ).json()
     assert approved["status"] == "approved"
+
+
+def test_archive_case_is_append_only_soft_delete(client: TestClient) -> None:
+    """Workspace delete: the case gains an archived version (audit kept), leaves
+    the list, and its calendar entry closes so the duplicate check frees the slot."""
+    outcome = _submit(client)
+    case_id = outcome["case_id"]
+    # approve so a calendar entry exists
+    client.post(f"/api/cases/{case_id}/decision", json={
+        "decision": "approved", "actor_role": "bu-campaign-lead", "actor_id": "lead@x.com",
+    })
+    response = client.delete(
+        f"/api/cases/{case_id}?actor_id=neeraj_v@levelshift.com&actor_role=Marketing Lead"
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "archived"
+    # gone from the list (browsers prune it), but the record itself survives
+    assert all(c["case_id"] != case_id for c in client.get("/api/cases").json())
+    detail = client.get(f"/api/cases/{case_id}").json()
+    assert detail["summary"]["status"] == "archived"
+    # idempotent
+    assert client.delete(
+        f"/api/cases/{case_id}?actor_id=x@x.com&actor_role=AiCoE Admin"
+    ).json()["status"] == "archived"

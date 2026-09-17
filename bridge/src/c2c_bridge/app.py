@@ -36,6 +36,7 @@ from campaign_identification.ingest import (
 from campaign_identification.orchestration import AgentDeps, CampaignIdentificationAgent
 from campaign_identification.persistence import (
     KIND_APPROVAL_TASK,
+    KIND_CALENDAR,
     KIND_CASE,
     KIND_GAP_REQUEST,
     LocalWorkspace,
@@ -667,9 +668,37 @@ def create_app(
     @app.get("/api/cases")
     def list_cases() -> list[dict[str, Any]]:
         records = bridge().store.query(KIND_CASE)
-        summaries = [_case_summary(r.key, r.value) for r in records]
+        summaries = [
+            _case_summary(r.key, r.value)
+            for r in records
+            if (r.value or {}).get("status") != "archived"
+        ]
         summaries.sort(key=lambda s: str(s.get("updated_at", "")), reverse=True)
         return summaries
+
+    @app.delete("/api/cases/{case_id}")
+    def archive_case(case_id: str, actor_id: str, actor_role: str) -> dict[str, Any]:
+        """Workspace-level campaign delete as an append-only soft delete: the case
+        gains an 'archived' version (identity-stamped) and its calendar entry
+        closes, so every browser's boot reconciliation drops it and the duplicate
+        check no longer counts it. The audit trail is never physically deleted."""
+        record = bridge().store.get(KIND_CASE, case_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail=f"unknown case: {case_id}")
+        case = dict(record.value)
+        if case.get("status") == "archived":
+            return {"case_id": case_id, "status": "archived"}
+        case["status"] = "archived"
+        case["archived_by"] = f"{actor_id} ({actor_role})"
+        bridge().store.put(KIND_CASE, case_id, case)
+        campaign_id = case.get("campaign_id")
+        if campaign_id:
+            calendar_entry = bridge().store.get(KIND_CALENDAR, str(campaign_id))
+            if calendar_entry is not None:
+                entry = dict(calendar_entry.value)
+                entry["status"] = "closed"
+                bridge().store.put(KIND_CALENDAR, str(campaign_id), entry)
+        return {"case_id": case_id, "status": "archived"}
 
     @app.get("/api/cases/{case_id}")
     def case_detail(case_id: str) -> dict[str, Any]:
