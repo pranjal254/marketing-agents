@@ -58,6 +58,7 @@ from campaign_identification.classify import (
     system_blocks,
 )
 from campaign_identification.conflicts import blocking_duplicates, detect_conflicts
+from campaign_identification.escalation import explain_escalation
 from campaign_identification.extraction import EXTRACTABLE_FIELDS, extract_fields
 from campaign_identification.gaps import draft_gap_request, gap_reason_codes
 from campaign_identification.intake import merge_gap_answers, normalize_request
@@ -161,10 +162,15 @@ class CampaignIdentificationAgent:
     ) -> ProcessOutcome:
         """Requester answers to a gap request (human input → human_gate 'modified',
         then the case resumes in the same trace). Also accepts field edits while the
-        draft is held in review. ``release_after`` routes the brief immediately when
-        the resumed run lands in ``draft_review`` (the requester's send = verification).
+        draft is held in review, and resolutions of an escalated case (the human the
+        escalation routed to adjusts scope/acknowledgment and the case resumes).
+        ``release_after`` routes the brief immediately when the resumed run lands in
+        ``draft_review`` (the requester's send = verification).
         """
-        case = self._load_case_or_raise(case_id, expected={"awaiting_input", "draft_review"})
+        case = self._load_case_or_raise(
+            case_id, expected={"awaiting_input", "draft_review", "escalated"}
+        )
+        resolving_escalation = case.get("status") == "escalated"
         approval = record_approval(decision="modified", actor_role=actor_role, actor_id=actor_id)
         request = db.request_from_case(case)
         ctx = RunContext(case_id=case_id, trace_id=str(case["trace_id"]))
@@ -175,9 +181,15 @@ class CampaignIdentificationAgent:
             **{
                 "shiftai.hitl.decision": "modified",
                 "shiftai.hitl.actor.role": actor_role,
-                "shiftai.learn.reason_code": "missing_field",
+                "shiftai.learn.reason_code": (
+                    str(case.get("escalation_reason_code") or "missing_field")
+                    if resolving_escalation
+                    else "missing_field"
+                ),
                 "shiftai.learn.agent_recommendation": case.get("action_class"),
-                "shiftai.learn.human_action": "provided_gap_answers",
+                "shiftai.learn.human_action": (
+                    "resolved_escalation" if resolving_escalation else "provided_gap_answers"
+                ),
                 "shiftai.learn.scenario_hash": s_hash,
             },
         )
@@ -269,7 +281,7 @@ class CampaignIdentificationAgent:
             fired.append("bc_fo_mixed")
         if hard_duplicates:
             fired.append("fresh_duplicate")
-        if compliance_hits:
+        if compliance_hits and not request.compliance_ack:
             fired.append("authority-envelope.compliance-ceiling")
         self._emit(
             ctx,
@@ -320,7 +332,7 @@ class CampaignIdentificationAgent:
                 validation=validation,
                 conflicts=conflicts,
             )
-        if compliance_hits:
+        if compliance_hits and not request.compliance_ack:
             return self._escalate(
                 ctx,
                 request,
@@ -334,6 +346,17 @@ class CampaignIdentificationAgent:
                 detail={"matched_terms": compliance_hits},
                 validation=validation,
                 conflicts=conflicts,
+            )
+
+        # Policy calls a human made at intake ride on the brief as notes, so the
+        # BU Campaign Lead approving it sees exactly what was decided and by whom.
+        policy_advisories: list[str] = []
+        if bc_fo.advisory:
+            policy_advisories.append(bc_fo.advisory)
+        if compliance_hits and request.compliance_ack:
+            policy_advisories.append(
+                f"Compliance-sensitive wording ({', '.join(compliance_hits)}) was "
+                f"reviewed at intake: {request.compliance_ack}"
             )
 
         # ---- Layer 3: reasoning (only when L2 found no blocking match) ----------
@@ -402,7 +425,7 @@ class CampaignIdentificationAgent:
             version=version,
             campaign_id=case.get("campaign_id"),
         )
-        doc_ref = self._upload_brief(ctx, campaign_brief)
+        doc_ref = self._upload_brief(ctx, campaign_brief, advisories=policy_advisories)
         status: CaseStatus = "draft_review" if hold else "awaiting_approval"
         db.save_case(
             deps.store,
@@ -484,10 +507,27 @@ class CampaignIdentificationAgent:
             ))
         return tuple(notes)
 
-    def _upload_brief(self, ctx: RunContext, campaign_brief: CampaignBrief) -> str:
+    def _upload_brief(
+        self,
+        ctx: RunContext,
+        campaign_brief: CampaignBrief,
+        advisories: list[str] | None = None,
+    ) -> str:
         """Idempotent workspace write of one brief version (no LLM)."""
         key = f"{ctx.case_id}:draft_brief:v{campaign_brief.version}"
         notes = self._brief_notes(ctx.case_id)
+        if advisories:
+            notes = (
+                *notes,
+                *(
+                    brief_mod.BriefNote(
+                        author="Campaign Identification Agent",
+                        context="Policy note",
+                        text=text,
+                    )
+                    for text in advisories
+                ),
+            )
 
         def side_effect() -> dict[str, Any]:
             docx_bytes = brief_mod.brief_docx(
@@ -1047,6 +1087,7 @@ class CampaignIdentificationAgent:
                 "action_class": action_class,
                 "escalation_reason_code": reason_code,
                 "escalation_detail": detail,
+                "escalation_help": explain_escalation(reason_code, detail, routed_to),
                 "awaiting_since": _now(),
                 "run_cost_usd": ctx.total_cost_usd,
             },

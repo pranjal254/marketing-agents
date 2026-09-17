@@ -44,6 +44,11 @@ class CampaignRequest(BaseModel):
     products: list[str] = Field(default_factory=list)
     free_text_context: str | None = None
     source_refs: list[str] = Field(default_factory=list)
+    # Identity-stamped human resolutions of policy escalations (who confirmed what).
+    # scope_ack: declares the single BC/F&O product scope when the text mentions both.
+    # compliance_ack: confirms no pricing/legal/partner commitment is being made.
+    scope_ack: str | None = None
+    compliance_ack: str | None = None
     # fields filled by the extraction step from the requester's own words:
     # field name -> the supporting quote/source note (provenance, never invention)
     derived_fields: dict[str, str] = Field(default_factory=dict)
@@ -66,6 +71,9 @@ class BcFoCheck(BaseModel):
     mixed: bool
     evidence: list[str] = Field(default_factory=list)
     split_proposal: list[str] = Field(default_factory=list)
+    # Set when an explicit single-product scope resolved a would-be mix: the
+    # note rides on the brief so the approver sees the call that was made.
+    advisory: str | None = None
 
 
 class ConflictFlag(BaseModel):

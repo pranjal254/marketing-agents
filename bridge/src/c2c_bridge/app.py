@@ -343,6 +343,8 @@ def _case_summary(key: str, value: dict[str, Any]) -> dict[str, Any]:
         "vertical": fields.get("vertical") or (value.get("request") or {}).get("vertical"),
         "gap_rounds": value.get("gap_rounds", 0),
         "escalation_reason_code": value.get("escalation_reason_code"),
+        "escalation_detail": value.get("escalation_detail"),
+        "escalation_help": value.get("escalation_help"),
         "doc_ref": value.get("doc_ref"),
         "trace_id": value.get("trace_id"),
         "updated_at": value.get("updated_at"),

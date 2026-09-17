@@ -109,3 +109,31 @@ def test_merge_gap_answers_fills_only_answered_fields(complete_raw: dict) -> Non
     assert merged.objective == "drive pipeline"
     assert merged.request_id == request.request_id
     assert merged.owner is None  # unanswered stays unanswered
+
+
+def test_explicit_single_scope_beats_text_mentions() -> None:
+    # The failed-demo brief shape: free text names both product lines as ICP
+    # context, but the declared scope is one product. Not a mix — an advisory
+    # note rides on the brief instead of a dead-end escalation.
+    request = normalize_request(
+        {
+            "topic": "Copilot collateral offering for D365 shops",
+            "context": "ICP: existing D365 F&O or D365 BC customer, treated independently",
+            "products": ["FO"],
+            "scope_ack": "F&O-only scope confirmed by lead@x.com (Marketing Lead)",
+        },
+        "adhoc",
+    )
+    check = check_bc_fo(request)
+    assert not check.mixed
+    assert check.advisory is not None
+    assert "Business Central" in check.advisory
+    assert "lead@x.com" in check.advisory
+
+
+def test_ambiguous_scope_still_escalates() -> None:
+    # No explicit product scope + both lines in text = genuinely ambiguous.
+    request = normalize_request(
+        {"topic": "One story for Business Central and F&O together"}, "adhoc"
+    )
+    assert check_bc_fo(request).mixed

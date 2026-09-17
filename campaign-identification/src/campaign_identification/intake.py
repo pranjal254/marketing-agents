@@ -151,6 +151,8 @@ def normalize_request(
         products=_as_list(lowered.get("products") or lowered.get("product_scope")),
         free_text_context=_as_str(_first(raw, "free_text_context")),
         source_refs=refs,
+        scope_ack=_as_str(_first(raw, "scope_ack")),
+        compliance_ack=_as_str(_first(raw, "compliance_ack")),
     )
 
 

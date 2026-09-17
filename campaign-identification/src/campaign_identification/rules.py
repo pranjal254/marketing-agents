@@ -54,6 +54,27 @@ def check_bc_fo(request: CampaignRequest) -> BcFoCheck:
     )
     bc_evidence = _hits(text, _BC_PATTERNS)
     fo_evidence = _hits(text, _FO_PATTERNS)
+
+    # An explicit single-product scope is a human declaration and wins over
+    # free-text mentions: the other product line is audience/context, nothing is
+    # blended. The call is recorded as an advisory that rides on the brief for
+    # the approver — a human still sees and owns the decision.
+    explicit_bc = has_bc and not has_fo
+    explicit_fo = has_fo and not has_bc
+    if explicit_bc or explicit_fo:
+        other_hits = fo_evidence if explicit_bc else bc_evidence
+        advisory = None
+        if other_hits:
+            scope = "Business Central" if explicit_bc else "F&O"
+            other = "F&O" if explicit_bc else "Business Central"
+            declared_by = request.scope_ack or "the explicit product scope on the request"
+            advisory = (
+                f"The request text mentions {other} ({', '.join(sorted(set(other_hits)))}) "
+                f"but the campaign scope is {scope} only, per {declared_by}. "
+                f"{other} stays audience context; the two product lines are never blended."
+            )
+        return BcFoCheck(mixed=False, advisory=advisory)
+
     has_bc = has_bc or bool(bc_evidence)
     has_fo = has_fo or bool(fo_evidence)
 

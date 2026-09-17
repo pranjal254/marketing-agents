@@ -163,3 +163,65 @@ def test_failure_persists_request_and_emits_error(
     summary = records_of(harness["sink"], "run_summary", outcome.case_id)[0]
     assert summary["shiftai.outcome"] == "failure"
     assert summary["error.type"] == "RuntimeError"
+
+
+def test_escalation_saves_human_readable_help(
+    harness: dict[str, Any], complete_raw: dict
+) -> None:
+    from campaign_identification import persistence as case_db
+
+    raw = dict(complete_raw)
+    raw["free_text_context"] = "Includes special pricing and partner commitments"
+    outcome = harness["agent"].process_request(raw, "form")
+    assert outcome.status == "escalated"
+    case = case_db.load_case(harness["deps"].store, outcome.case_id)
+    assert case is not None
+    help_pkg = case["escalation_help"]
+    assert help_pkg["reason_code"] == "compliance_ceiling"
+    assert help_pkg["routed_to_role"] == "Marketing Lead"
+    assert "pricing" in help_pkg["why"]
+    kinds = {o["kind"] for o in help_pkg["options"]}
+    assert "resolve" in kinds and "edit" in kinds
+
+
+def test_compliance_ack_proceeds_with_policy_note(
+    harness: dict[str, Any], complete_raw: dict
+) -> None:
+    raw = dict(complete_raw)
+    raw["free_text_context"] = "Collateral reflects current pricing from CRM data"
+    raw["compliance_ack"] = (
+        "No pricing, legal, or partner commitment is made — confirmed by "
+        "lead@x.com (Marketing Lead)"
+    )
+    outcome = harness["agent"].process_request(raw, "form")
+    assert outcome.status == "awaiting_approval"  # ceiling satisfied by a named human
+    policy = records_of(harness["sink"], "policy_check", outcome.case_id)[0]
+    assert policy["shiftai.policy.decision"] == "allow"
+
+
+def test_escalated_case_resumes_via_gap_answers(
+    harness: dict[str, Any], complete_raw: dict
+) -> None:
+    raw = dict(complete_raw)
+    raw["offer_topic"] = "Joint Business Central and F&O modernization story"
+    raw["products"] = ["BC", "FO"]
+    agent = harness["agent"]
+    outcome = agent.process_request(raw, "form")
+    assert outcome.status == "escalated"
+    # The Marketing Lead resolves it in place: one product scope, identity kept.
+    resumed = agent.submit_gap_answers(
+        outcome.case_id,
+        {
+            "products": "FO",
+            "scope_ack": "F&O-only scope confirmed by lead@x.com (Marketing Lead)",
+        },
+        actor_role="marketing-lead",
+        actor_id="lead@x.com",
+    )
+    assert resumed.status == "awaiting_approval"
+    gates = records_of(harness["sink"], "human_gate", outcome.case_id)
+    assert any(
+        g.get("shiftai.learn.human_action") == "resolved_escalation"
+        and g.get("shiftai.learn.reason_code") == "bc_fo_mix"
+        for g in gates
+    )
