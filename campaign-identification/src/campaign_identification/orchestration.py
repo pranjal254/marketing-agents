@@ -15,6 +15,7 @@ uncertainty type rides in the additive attribute ``shiftai.escalation.uncertaint
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -75,7 +76,7 @@ from campaign_identification.models import (
     RequestSource,
     ValidationResult,
 )
-from campaign_identification.revision import revise_request_fields
+from campaign_identification.revision import revise_request_fields, scrub_flagged_text
 from campaign_identification.rules import check_bc_fo, touches_compliance
 from campaign_identification.validation import validate_request
 
@@ -304,6 +305,7 @@ class CampaignIdentificationAgent:
             return self._escalate(
                 ctx,
                 request,
+                hold=hold,
                 action_class="flag_bc_fo_mix",
                 decided_by_layer=2,
                 tier=2,
@@ -319,6 +321,7 @@ class CampaignIdentificationAgent:
             return self._escalate(
                 ctx,
                 request,
+                hold=hold,
                 action_class="flag_duplicate",
                 decided_by_layer=2,
                 tier=2,
@@ -336,6 +339,7 @@ class CampaignIdentificationAgent:
             return self._escalate(
                 ctx,
                 request,
+                hold=hold,
                 action_class=None,
                 decided_by_layer=2,
                 tier=3,
@@ -377,6 +381,7 @@ class CampaignIdentificationAgent:
             return self._escalate(
                 ctx,
                 request,
+                hold=hold,
                 action_class=output.action_class,
                 decided_by_layer=3,
                 tier=2,
@@ -398,6 +403,7 @@ class CampaignIdentificationAgent:
             return self._escalate(
                 ctx,
                 request,
+                hold=hold,
                 action_class=output.action_class,
                 decided_by_layer=3,
                 tier=2,
@@ -594,6 +600,72 @@ class CampaignIdentificationAgent:
             self.deps.rate_breaker.record_execution(self.deps.config.agent_id)
 
     # -------------------------------------------------- requester iteration loop
+
+    def suggest_text_fix(self, case_id: str) -> dict[str, Any]:
+        """Agentic fix for an escalated case: the agent rewrites the request text so
+        the flagged wording is gone (minimal edits, nothing invented), then verifies
+        its own output DETERMINISTICALLY — the model never grades itself. The human
+        reviews the suggestion and resubmits; the fix never applies itself."""
+        case = self._load_case_or_raise(case_id, expected={"escalated"})
+        request = db.request_from_case(case)
+        text = (request.free_text_context or "").strip()
+        if not text:
+            raise ApprovalGateError("this case has no request text to rewrite")
+        help_pkg = case.get("escalation_help") or {}
+        terms = [str(t) for t in help_pkg.get("evidence") or []]
+        reason = str(
+            help_pkg.get("policy") or case.get("escalation_reason_code") or "policy flag"
+        )
+        ctx = RunContext(case_id=case_id, trace_id=str(case["trace_id"]))
+        with ctx.span("l3-scrub", "llm") as scrub_span:
+            new_text, changes, response = scrub_flagged_text(
+                self.deps.provider,
+                system_blocks(self.deps.config),
+                text=text,
+                reason=reason,
+                flagged_terms=terms,
+            )
+        if response is not None:
+            cost = response_cost(
+                response.model,
+                MODEL_ID,
+                response.input_tokens,
+                response.output_tokens,
+                response.cache_read_input_tokens,
+                rate_card=self.rate_card,
+            )
+            ctx.add_cost(cost)
+            attrs: dict[str, Any] = {
+                "shiftai.layer": "L3",
+                "gen_ai.tool.name": "layer3.scrub_text",
+                "shiftai.span.id": scrub_span.span_id,
+                "shiftai.span.duration_ms": scrub_span.duration_ms,
+                **self._llm_attributes(response),
+            }
+            if cost is not None:
+                attrs.update(
+                    {
+                        "shiftai.cost.amount": cost,
+                        "shiftai.cost.currency": "USD",
+                        "shiftai.cost.model": "rate_card",
+                        "shiftai.cost.scope": "span_incremental",
+                    }
+                )
+            self._emit(ctx, "tool_execution", **attrs)
+        if new_text is None:
+            return {"text": text, "changes": [], "remaining_terms": terms, "cleared": False}
+        remaining = [
+            t for t in terms if re.search(rf"\b{re.escape(t)}\b", new_text, re.IGNORECASE)
+        ]
+        if case.get("escalation_reason_code") == "compliance_ceiling":
+            probe = request.model_copy(update={"free_text_context": new_text})
+            remaining = sorted({*remaining, *touches_compliance(probe)})
+        return {
+            "text": new_text,
+            "changes": changes,
+            "remaining_terms": remaining,
+            "cleared": not remaining,
+        }
 
     def revise_brief(
         self,
@@ -974,6 +1046,7 @@ class CampaignIdentificationAgent:
             return self._escalate(
                 ctx,
                 request,
+                hold=hold,
                 action_class="request_gaps",
                 decided_by_layer=2,
                 tier=2,
@@ -1052,6 +1125,7 @@ class CampaignIdentificationAgent:
         conflicts: list[ConflictFlag],
         control: dict[str, str] | None = None,
         already_decided: bool = False,
+        hold: bool = False,
     ) -> ProcessOutcome:
         if not already_decided:
             self._emit(
@@ -1088,6 +1162,10 @@ class CampaignIdentificationAgent:
                 "escalation_reason_code": reason_code,
                 "escalation_detail": detail,
                 "escalation_help": explain_escalation(reason_code, detail, routed_to),
+                # Keep the AI-first review step across the escalation loop: a case
+                # resumed after a resolution must land back with the requester
+                # (draft_review), never route straight past them.
+                "hold_for_verification": hold,
                 "awaiting_since": _now(),
                 "run_cost_usd": ctx.total_cost_usd,
             },

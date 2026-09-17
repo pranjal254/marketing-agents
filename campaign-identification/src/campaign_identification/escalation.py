@@ -28,16 +28,20 @@ def _option(
     patch: dict[str, str] | None = None,
     roles: list[str] | None = None,
     note: str | None = None,
+    target: str = "fields",
 ) -> dict[str, Any]:
     return {
         "id": option_id,
         "label": label,
         # "resolve": one click patches fields and resumes the same case.
-        # "edit": reopen the form pre-filled. "restart": new request.
+        # "edit": reopen the right editor — target "text" (the request's own
+        # wording, where the flagged terms usually live) or "fields" (the form).
+        # "restart": new request.
         "kind": kind,
         "patch": patch or {},
         "roles": roles or [],  # empty = anyone; else only these roles may click
         "note": note,
+        "target": target,
     }
 
 
@@ -86,7 +90,10 @@ def explain_escalation(
                     patch={"products": "FO"},
                     note="BC mentions stay as audience context on the brief.",
                 ),
-                _option("edit", "Edit the brief myself", "edit"),
+                _option(
+                    "edit", "Edit the request text myself", "edit", target="text",
+                    note="Reopens your original wording so you can adjust the product scope.",
+                ),
             ],
         }
 
@@ -115,7 +122,11 @@ def explain_escalation(
                     roles=["Marketing Lead", "AiCoE Admin"],
                     note="Your name and role are recorded on the case as the confirmation.",
                 ),
-                _option("edit", "Edit the brief to remove the sensitive wording", "edit"),
+                _option(
+                    "edit", "Edit the request text to remove the sensitive wording", "edit",
+                    target="text",
+                    note="Reopens your original wording — remove or rephrase the flagged terms.",
+                ),
             ],
         }
 

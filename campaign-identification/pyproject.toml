@@ -10,10 +10,12 @@ requires-python = ">=3.12"
 dependencies = [
     "shiftai-shared>=0.1.0",
     "pydantic>=2.7",
+    "openpyxl>=3.1",
+    "pypdf>=5.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5"]
+dev = ["pytest>=8", "mypy>=1.10", "ruff>=0.5", "types-openpyxl"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -36,7 +38,7 @@ mypy_path = "src"
 packages = ["campaign_identification"]
 
 [[tool.mypy.overrides]]
-module = ["docx", "docx.*", "jsonschema", "jsonschema.*"]
+module = ["docx", "docx.*", "jsonschema", "jsonschema.*", "openpyxl", "openpyxl.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

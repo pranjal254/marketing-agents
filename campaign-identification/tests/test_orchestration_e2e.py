@@ -225,3 +225,55 @@ def test_escalated_case_resumes_via_gap_answers(
         and g.get("shiftai.learn.reason_code") == "bc_fo_mix"
         for g in gates
     )
+
+
+def test_escalation_resolution_honors_review_hold(
+    harness: dict[str, Any], complete_raw: dict
+) -> None:
+    """The AI-first intake flow (hold_for_verification) must survive the escalation
+    loop: after a resolution the case lands back with the requester in draft_review,
+    never routed past their review."""
+    raw = dict(complete_raw)
+    raw["free_text_context"] = "Includes special pricing commitments"
+    agent = harness["agent"]
+    outcome = agent.process_request(raw, "form", hold_for_verification=True)
+    assert outcome.status == "escalated"
+    resumed = agent.submit_gap_answers(
+        outcome.case_id,
+        {"compliance_ack": "No commitment is made, confirmed by lead@x.com (Marketing Lead)"},
+        actor_role="marketing-lead",
+        actor_id="lead@x.com",
+    )
+    assert resumed.status == "draft_review"
+
+
+def test_suggest_text_fix_scrubs_and_verifies(
+    harness: dict[str, Any], complete_raw: dict
+) -> None:
+    """The agentic fix: the agent rewrites the flagged text, and its output is
+    verified deterministically (term scan + compliance re-check), never trusted."""
+    import json
+
+    raw = dict(complete_raw)
+    raw["free_text_context"] = "Collateral covers special pricing tiers for partners."
+    agent = harness["agent"]
+    outcome = agent.process_request(raw, "form")
+    assert outcome.status == "escalated"
+    clean = "Collateral covers commercial packaging options for partners."
+    harness["provider"].script.append((
+        lambda u: "flagged terms" in u,
+        json.dumps({"text": clean, "changes": ["replaced the pricing sentence"]}),
+    ))
+    suggestion = agent.suggest_text_fix(outcome.case_id)
+    assert suggestion["cleared"] is True
+    assert suggestion["text"] == clean
+    assert suggestion["changes"] == ["replaced the pricing sentence"]
+    # a model reply that still carries the term is caught deterministically
+    # (insert(0): the mock provider is first-match-wins)
+    harness["provider"].script.insert(0, (
+        lambda u: "flagged terms" in u,
+        json.dumps({"text": "Still mentions pricing here.", "changes": ["tried"]}),
+    ))
+    second = agent.suggest_text_fix(outcome.case_id)
+    assert second["cleared"] is False
+    assert "pricing" in second["remaining_terms"]

@@ -28,6 +28,11 @@ from c2c_content_repurposing import MODEL_ID as REPURPOSE_MODEL_ID
 from c2c_quality_gate import MODEL_ID as GATE_MODEL_ID
 from campaign_identification import MODEL_ID
 from campaign_identification.approval import ApprovalGateError
+from campaign_identification.ingest import (
+    MAX_UPLOAD_BYTES,
+    BriefUploadError,
+    parse_brief_document,
+)
 from campaign_identification.orchestration import AgentDeps, CampaignIdentificationAgent
 from campaign_identification.persistence import (
     KIND_APPROVAL_TASK,
@@ -35,7 +40,7 @@ from campaign_identification.persistence import (
     KIND_GAP_REQUEST,
     LocalWorkspace,
 )
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -517,6 +522,33 @@ def create_app(
             )
         return outcome.model_dump()
 
+    @app.post("/api/requests/upload")
+    def submit_request_upload(
+        file: UploadFile = File(...),  # noqa: B008 — FastAPI dependency default
+        requester: str = Form(...),
+        hold_for_verification: bool = Form(True),
+    ) -> dict[str, Any]:
+        """A brief uploaded as .docx/.xlsx: parse locally (no LLM, hard budgets),
+        then run the SAME intake pipeline as a typed description — the extraction
+        layer pulls fields from the document's own words with provenance."""
+        content = file.file.read(MAX_UPLOAD_BYTES + 1)
+        try:
+            parsed = parse_brief_document(file.filename or "", content)
+        except BriefUploadError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raw = {"free_text_context": parsed.text, "requester": requester}
+        with bridge().run_lock:
+            outcome = bridge().agent.process_request(
+                raw,
+                "adhoc",
+                source_ref=f"upload:{parsed.filename}",
+                hold_for_verification=hold_for_verification,
+            )
+        return {
+            **outcome.model_dump(),
+            "upload": parsed.model_dump(exclude={"text"}),
+        }
+
     @app.post("/api/cases/{case_id}/answers")
     def submit_answers(case_id: str, body: AnswersIn) -> dict[str, Any]:
         try:
@@ -531,6 +563,16 @@ def create_app(
         except ApprovalGateError as exc:
             raise _gate_http_error(exc) from exc
         return outcome.model_dump()
+
+    @app.post("/api/cases/{case_id}/suggest_fix")
+    def suggest_fix(case_id: str) -> dict[str, Any]:
+        """Agentic fix suggestion for an escalated case's request text — the agent
+        rewrites, verifies deterministically, and the human reviews before resubmit."""
+        try:
+            with bridge().run_lock:
+                return bridge().agent.suggest_text_fix(case_id)
+        except ApprovalGateError as exc:
+            raise _gate_http_error(exc) from exc
 
     @app.post("/api/cases/{case_id}/decision")
     def record_decision(case_id: str, body: DecisionIn) -> dict[str, Any]:
