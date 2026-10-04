@@ -2,8 +2,11 @@
 
 Jobs come ONLY from the approved asset checklist (create/adapt items with a
 channel recipe; reuse assets and the flagship itself are skipped) — generating
-anything else is impossible by construction (spec guardrail 4). Volumes come from
-the checklist item (Agent 2's composition is the authority).
+anything else is impossible by construction (spec guardrail 4). Volume and
+length come from the campaign's content settings when the Content Writer has
+set them, otherwise from the checklist item and the config defaults; either way
+the configured ceiling binds, so a job can never ask for more than governance
+allows.
 
 Execution seam: ``run_fanout_jobs`` walks independent per-derivative calls. In
 dev they run sequentially (deterministic telemetry ordering, SQLite-friendly);
@@ -20,6 +23,7 @@ from dataclasses import dataclass
 from c2c_campaign_box.models import AssetChecklist
 
 from c2c_content_repurposing.agent_config import ChannelRecipe, RepurposingConfig
+from c2c_content_repurposing.content_settings import ContentSettings, resolve
 
 
 @dataclass(frozen=True)
@@ -28,10 +32,14 @@ class DerivativeJob:
     asset_type: str
     recipe: ChannelRecipe
     volume: int
+    min_words: int
+    max_words: int
 
 
 def build_fanout_jobs(
-    checklist: AssetChecklist, config: RepurposingConfig
+    checklist: AssetChecklist,
+    config: RepurposingConfig,
+    settings: ContentSettings | None = None,
 ) -> tuple[list[DerivativeJob], list[str]]:
     """Returns (jobs, skipped asset_ids). Skips: the flagship (already drafted),
     reuse decisions (nothing to draft — the repository asset is reused as-is),
@@ -48,12 +56,15 @@ def build_fanout_jobs(
         if recipe is None:
             skipped.append(item.asset_id)
             continue
+        chosen = resolve(settings, item.asset_id, item.asset_type, max(item.volume, 1), config)
         jobs.append(
             DerivativeJob(
                 asset_id=item.asset_id,
                 asset_type=item.asset_type,
                 recipe=recipe,
-                volume=max(item.volume, 1),
+                volume=chosen.variants,
+                min_words=chosen.min_words,
+                max_words=chosen.max_words,
             )
         )
     return jobs, skipped

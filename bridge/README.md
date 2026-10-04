@@ -58,6 +58,110 @@ npm run dev        # → http://localhost:5173/live  (sidebar: "Live agents")
 | `GET /api/box/campaigns` · `GET /api/box/campaigns/{cmp}` | plan list / full detail (pack, checklist, outlines, plan, manifest, report) |
 | `GET /api/box/documents?path=REL` | download pack .docx / tracker .csv / final snapshots (workspace-scoped) |
 
+### Content settings (`/api/box/…`)
+
+How many of each asset a campaign needs and how long each should run. The
+Content Writer sets these between confirming the flagship and triggering the
+fan-out; generation reads them, falling back to the plan volumes and the config
+word ranges when nothing is saved.
+
+| Method/Path | Purpose |
+|---|---|
+| `GET /api/box/campaigns/{cmp}/content-settings` | current settings plus the bounds the UI must respect; serves config defaults until something is saved |
+| `PUT /api/box/campaigns/{cmp}/content-settings` `{actor_id, actor_role, note?, items[]}` | identity-stamped save; a **patch**, so assets left out keep their values |
+
+`items[]` entries are `{asset_id, variants?, min_words?, max_words?}`. Anything
+beyond the configured ceiling is clamped rather than rejected, and every clamp
+comes back in `settings.adjustments` so the writer sees the correction. The
+ceiling and the word floor/ceiling live in the agent's versioned config
+(`contentLimits` in `content-repurposing/config/*.json`), which is also where
+the per-asset-type default ranges are tuned. Each save is a new version.
+
+### Aggregated telemetry export (`/api/telemetry/export`)
+
+A dashboard-ready rollup of the STS stream for the ShiftAI Execution Studio, so
+another application can read cost, latency, escalations and human gates broken
+down by **journey step** without replaying raw records.
+
+| Method/Path | Purpose |
+|---|---|
+| `GET /api/telemetry/export` | the banked snapshot, served from the context store; cheap to poll, never recomputes |
+| `POST /api/telemetry/export/refresh[?force=true]` | recompute and bank a new one; rate limited |
+| `GET /api/telemetry/export/history` | when previous snapshots were taken, and how much each held |
+
+Refreshes are limited to one per `TELEMETRY_EXPORT_INTERVAL_HOURS` (default 6).
+Calling sooner is **not an error**: the response is the banked snapshot with
+`refreshed: false` and a `next_refresh_at`, so a polling client needs no special
+case. `?force=true` overrides it.
+
+Each refresh aggregates only the raw records after the previous snapshot cursor
+and merges that delta onto the banked figures. This matters because the raw
+stream is a per-session JSONL file that does not survive a restart, while
+snapshots live in the context store (Postgres when `DATABASE_URL` is set). Totals
+therefore only move forwards. Every figure is a counter, a sum, a maximum or a
+set union, so the merge is exact; averages are derived at read time from a sum
+and a count rather than stored.
+
+The payload ships the journey vocabulary (`process.stages`) alongside the
+figures, so a consumer can render steps it has never seen without hardcoding
+them. Breakdowns: `by_stage`, `by_agent`, `by_event_type`, `by_model`,
+`by_outcome`, `by_escalation_reason`, `by_human_gate_decision`.
+
+Stage context comes from the versioned journey pack
+(`shared/src/shiftai_shared/process/`). Each agent declares the step it sits in;
+agents spanning several steps stamp the exceptions (the audience and offer pass
+is step 2, packaging is step 6, grammar QA is step 8, sign-off is step 9).
+
+### Ask anything (`/api/ask`): Beta, read-only
+
+| Method/Path | Purpose |
+|---|---|
+| `GET /api/ask/meta` | model, version, the tool catalogue, and what the assistant can and cannot do |
+| `POST /api/ask` `{question, conversation_id?, viewer?, actor_id?}` | an answer, the lookups behind it, and the conversation it belongs to |
+| `GET /api/ask/conversations?actor_id=` | past conversations, newest first |
+| `GET /api/ask/conversations/{id}` | one conversation in full |
+
+The assistant answers by **looking things up**. Each turn runs a short loop:
+the model either calls one of the read-only tools in `ask_tools.py` or produces
+its answer, and tool results feed the next step. Passing `conversation_id`
+continues a thread, so a follow-up like "check the gate for it" resolves
+against what was already said.
+
+Tool calling is a **JSON protocol, not a provider feature**. The shared
+`LLMProvider` interface is deliberately provider-agnostic and native tool
+calling differs between Anthropic and Azure OpenAI, so the model replies with a
+strict JSON object (`{"tool", "args"}` or `{"answer", "references"}`) exactly as
+every agent here already does, and the loop dispatches it. The assistant
+therefore works unchanged on whichever provider the fleet runs.
+
+Budget: at most `MAX_STEPS` (6) tool calls and `MAX_COST_USD` (0.50) per
+question. A loop that cannot end is worse than a wrong answer, because it burns
+money quietly. Running out of steps produces an honest "I ran out of lookups",
+never a guess.
+
+**Nothing in the toolset writes, and none of it invokes an agent.** The registry
+is an allowlist, not a filter over a larger surface: a capability absent from it
+cannot be invoked however the model phrases the request. Every gate-advancing
+path is identity-stamped and sequenced, and a chat turn is neither, so an answer
+that wants an action names the screen that performs it.
+
+**The access story is weaker than the first cut, deliberately.** The original
+single-shot version could only read the snapshot the browser sent, so it
+structurally could not exceed the caller's session. These tools read the context
+store directly, which is what makes the assistant useful and also means it can
+reach any campaign in the workspace. Until SSO lands, treat the assistant as
+having the reach of the workspace, not of the person asking.
+
+Conversations persist in the context store (`assistant_conversation`), so they
+survive a browser, a device and a restart. The studio keeps a localStorage copy
+as a cache for instant reopen and a sessionStorage key for which thread a tab
+has open; the database is the record.
+
+Telemetry: one `decision_made` per reasoning step, one `tool_execution` per
+lookup (with `gen_ai.tool.name`), and a `run_summary` per question. All of it is
+stage-free, because the assistant sits beside the journey rather than inside it
+and must not distort per-step cost. Question text never reaches the stream.
+
 Dev seed data: each session gets a small synthetic content repository +
 intel-library (`c2c_bridge/seed.py`) so reuse search and intel gathering have real
 material. No SemRush key → intel-library-only fallback, flagged per spec.

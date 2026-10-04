@@ -9,11 +9,13 @@ module (no LLM). Model: claude-opus-5 for the planning pass (Azure OpenAI is the
 dev/test substitute behind the shared provider interface).
 """
 
+from shiftai_shared.process import PROCESS_NAME as PROCESS_NAME
+
 __version__ = "0.1.0"
 
 AGENT_ID = "campaign_in_a_box"
 AGENT_TYPE = "orchestrator"
-PROCESS_NAME = "content-to-campaign"
+
 MODEL_ID = "claude-opus-5"
 MAX_OUTPUT_TOKENS = 16_000
 PLANNING_TIMEOUT_S = 1200.0  # 20 minutes per planning pass (spec Timeout)

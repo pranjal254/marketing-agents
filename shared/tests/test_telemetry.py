@@ -10,6 +10,7 @@ import pytest
 from shiftai_shared.telemetry import (
     InMemorySink,
     JsonlSink,
+    ProcessContext,
     StsEmitter,
     TelemetrySink,
     TelemetryValidationError,
@@ -30,7 +31,7 @@ def make_emitter(sink: InMemorySink | None = None) -> tuple[StsEmitter, InMemory
         environment="dev",
         risk_tier="medium",
         data_classification="confidential",
-        process_name="test-process",
+        process=ProcessContext(name="test-process", version="9.9.9"),
     )
     return emitter, sink
 

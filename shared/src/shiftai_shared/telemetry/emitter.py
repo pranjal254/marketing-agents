@@ -16,6 +16,11 @@ from typing import Any
 import jsonschema
 
 from shiftai_shared.config import Environment
+from shiftai_shared.telemetry.process import (
+    STAGE_ATTRIBUTE,
+    STAGE_ORDINAL_ATTRIBUTE,
+    ProcessContext,
+)
 from shiftai_shared.telemetry.schema import load_sts_schema
 
 STS_SCHEMA_VERSION = "2.0.0"
@@ -81,7 +86,7 @@ class StsEmitter:
         environment: Environment,
         risk_tier: str,
         data_classification: str,
-        process_name: str | None = None,
+        process: ProcessContext | None = None,
         schema_path: str | None = None,
     ) -> None:
         self._sink = sink
@@ -95,8 +100,12 @@ class StsEmitter:
             "shiftai.risk.tier": risk_tier,
             "shiftai.data.classification": data_classification,
         }
-        if process_name:
-            self._static["shiftai.process.name"] = process_name
+        # Process context: which business process this agent serves and the step
+        # of it every record belongs to unless the call stamps a different one.
+        # A dashboard needs this to report by business step, not by agent.
+        self._process = process
+        if process is not None:
+            self._static.update(process.static_attributes())
         schema = load_sts_schema(schema_path)
         self._validator = jsonschema.Draft202012Validator(schema)
 
@@ -134,6 +143,12 @@ class StsEmitter:
         # decision_made may carry an explicit null action class (abstention).
         if event_type == "decision_made" and "shiftai.decision.action_class" not in record:
             record["shiftai.decision.action_class"] = None
+        # Derived from whichever stage ended up on the record (default or
+        # per-call override), so consumers can sort steps without the vocabulary.
+        if self._process is not None:
+            ordinal = self._process.ordinal_for(record.get(STAGE_ATTRIBUTE))
+            if ordinal is not None:
+                record[STAGE_ORDINAL_ATTRIBUTE] = ordinal
         self.validate(record)
         self._sink.emit(record)
         return record

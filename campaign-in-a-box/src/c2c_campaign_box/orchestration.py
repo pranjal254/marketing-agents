@@ -34,9 +34,11 @@ from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse
+from shiftai_shared.process import STAGE_AUDIENCE_OFFER, STAGE_PACKAGING, process_context
 from shiftai_shared.resilience import IdempotencyStore, execute_idempotent
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
 from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
+from shiftai_shared.telemetry.process import STAGE_ATTRIBUTE
 
 from c2c_campaign_box import (
     AGENT_TYPE,
@@ -45,7 +47,6 @@ from c2c_campaign_box import (
     PACK_TEMPLATE_VERSION,
     PACKAGING_TIMEOUT_S,
     PLANNING_TIMEOUT_S,
-    PROCESS_NAME,
     RISK_TIER,
     SYSTEM_PROMPT_VERSION,
 )
@@ -136,7 +137,7 @@ class CampaignBoxOrchestrator:
             environment=deps.settings.shiftai_environment,
             risk_tier=RISK_TIER,
             data_classification=DATA_CLASSIFICATION,
-            process_name=PROCESS_NAME,
+            process=process_context(deps.config.agent_id),
         )
 
     # ------------------------------------------------------------ planning pass
@@ -251,6 +252,8 @@ class CampaignBoxOrchestrator:
             ctx, pack_span.span_id, pack_span.duration_ms, pack_response,
             action="audience_offer_pack", confidence=pack_output.confidence,
             extra={
+                # The pack is journey step 2; the rest of this agent is step 3.
+                STAGE_ATTRIBUTE: STAGE_AUDIENCE_OFFER,
                 "shiftai.pack.proof_points_verified": len(grounded.proof_points),
                 "shiftai.pack.proof_points_excluded": len(excluded),
                 "shiftai.pack.unverified_share": unverified_share,
@@ -692,7 +695,10 @@ class CampaignBoxOrchestrator:
         item = next((i for i in checklist.items if i.asset_id == asset_id), None)
         if item is None:
             raise PlanGateError(f"asset {asset_id!r} is not on the checklist")
-        ctx = RunContext(case_id=campaign_id, trace_id=str(case["trace_id"]))
+        ctx = RunContext(
+            case_id=campaign_id, trace_id=str(case["trace_id"]),
+            stage_id=STAGE_PACKAGING,
+        )
         prior = [a for a in db.load_registered_assets(self.deps.store, campaign_id)
                  if a.asset_id == asset_id]
         next_version = (max(a.version for a in prior) + 1) if prior else 1
@@ -762,7 +768,10 @@ class CampaignBoxOrchestrator:
             campaign_id, expected={"packaged_pending_compliance", "packaging_blocked",
                                    "in_production"},
         )
-        ctx = RunContext(case_id=campaign_id, trace_id=str(case["trace_id"]))
+        ctx = RunContext(
+            case_id=campaign_id, trace_id=str(case["trace_id"]),
+            stage_id=STAGE_PACKAGING,
+        )
         checklist = self._load_checklist(campaign_id)
         known = {i.asset_id for i in checklist.items}
         unknown = [a for a in asset_ids if a not in known]
@@ -804,7 +813,10 @@ class CampaignBoxOrchestrator:
         case = self._load_case_or_raise(
             campaign_id, expected={"in_production", "packaging_blocked"}
         )
-        ctx = RunContext(case_id=campaign_id, trace_id=str(case["trace_id"]))
+        ctx = RunContext(
+            case_id=campaign_id, trace_id=str(case["trace_id"]),
+            stage_id=STAGE_PACKAGING,
+        )
         deps = self.deps
         config = deps.config
 

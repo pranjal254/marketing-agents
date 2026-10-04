@@ -111,6 +111,9 @@ def flagship_user_prompt(
     payload: dict[str, Any],
     selfcheck_feedback: list[str] | None = None,
     instruction: str | None = None,
+    *,
+    min_words: int,
+    max_words: int,
 ) -> str:
     feedback = ""
     if selfcheck_feedback:
@@ -122,14 +125,17 @@ def flagship_user_prompt(
         feedback += f"\nConsolidated rework instruction to apply: {instruction}\n"
     return (
         "Draft the flagship asset from the approved outline sections below. This is "
-        "the campaign's cornerstone: a substantial, publication-ready long-form piece "
-        "of roughly 900 to 1,400 words (about two to three pages), not a skeleton.\n"
+        "the campaign's cornerstone: a substantial, publication-ready long-form piece, "
+        "not a skeleton.\n"
+        f"Length: between {min_words:,} and {max_words:,} words in total, set for this "
+        "campaign. Treat it as a requirement, not a suggestion, and spread the length "
+        "evenly across the sections rather than padding one of them.\n"
         "Rules:\n"
         "- Cover every section provided. Do NOT add or remove sections; sections "
         "excluded for unverified claims are already gap notes, do not invent "
         "replacements.\n"
-        "- Develop each section into two to four full paragraphs of flowing prose "
-        "(roughly 90 to 160 words each). No bullet fragments, no one-line sections.\n"
+        "- Develop each section into full paragraphs of flowing prose sized to reach "
+        "that total. No bullet fragments, no one-line sections.\n"
         "- Write for a senior enterprise reader in plain, human language: open with "
         "the business problem, explain the insight, then the practical takeaway. "
         "Define any acronym on first use. It should read like a knowledgeable person "
@@ -174,10 +180,14 @@ def derivative_user_prompt(
     audience_note: dict[str, Any],
     instruction: str | None = None,
     selfcheck_feedback: list[str] | None = None,
+    *,
+    min_words: int,
+    max_words: int,
 ) -> str:
     payload = {
         "channel_recipe": recipe.model_dump(),
         "volume_limit": volume,
+        "words_per_variant": {"min": min_words, "max": max_words},
         "claim_inventory": [i.model_dump() for i in inventory.items],
         "audience": audience_note,
     }
@@ -190,7 +200,11 @@ def derivative_user_prompt(
     rework = f"\nConsolidated rework instruction to apply: {instruction}\n" if instruction else ""
     return (
         f"Generate the {recipe.label} derivative from the claim inventory. Rules:\n"
-        f"- At most {volume} variant(s) — the volume limit is config, not judgment.\n"
+        f"- Exactly {volume} variant(s) — the volume is set for this campaign, not "
+        "judgment. Never produce more.\n"
+        f"- Each variant runs {min_words:,} to {max_words:,} words, also set for this "
+        "campaign. Treat it as a requirement; do not pad to reach it and do not cut "
+        "a required point to stay under it.\n"
         "- Extract and rework claims, quotes, data points and structure from the "
         "inventory; never copy-paste flagship excerpts verbatim as a variant.\n"
         "- claims_used lists the claim_id of EVERY inventory item the variants draw "

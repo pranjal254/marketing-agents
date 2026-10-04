@@ -14,8 +14,14 @@ from pathlib import Path
 from typing import Any
 
 from c2c_campaign_box import persistence as box_db
+from c2c_campaign_box.models import AssetChecklist
 from c2c_content_repurposing import MODEL_ID as REPURPOSE_MODEL_ID
 from c2c_content_repurposing import persistence as rp_db
+from c2c_content_repurposing.content_settings import (
+    ContentSettings,
+    apply_requests,
+    defaults_for_checklist,
+)
 from c2c_content_repurposing.orchestration import (
     ContentRepurposingAgent,
     RepurposeGateError,
@@ -36,6 +42,26 @@ class FlagshipConfirmIn(BaseModel):
     actor_id: str = Field(min_length=1)
     actor_role: str = "content-writer"
     notes: str | None = None
+
+
+class AssetSettingIn(BaseModel):
+    """One asset's requested counts and length. Every field but the id is
+    optional so a partial update is a legal request."""
+
+    asset_id: str = Field(min_length=1)
+    variants: int | None = Field(default=None, ge=1)
+    min_words: int | None = Field(default=None, ge=1)
+    max_words: int | None = Field(default=None, ge=1)
+
+
+class ContentSettingsIn(BaseModel):
+    """The Content Writer's settings for a campaign, applied between confirming
+    the flagship and triggering the fan-out."""
+
+    actor_id: str = Field(min_length=1)
+    actor_role: str = "content-writer"
+    note: str | None = None
+    items: list[AssetSettingIn] = Field(default_factory=list)
 
 
 class ReworkIn(BaseModel):
@@ -141,6 +167,78 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
         except RepurposeGateError as exc:
             raise _gate_error(exc) from exc
         return outcome.model_dump()
+
+    def _checklist(campaign_id: str) -> AssetChecklist:
+        record = store().get(box_db.KIND_CHECKLIST, campaign_id)
+        if record is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"no approved asset plan for {campaign_id!r} yet",
+            )
+        return AssetChecklist.model_validate(record.value)
+
+    def _settings_view(
+        campaign_id: str, settings: ContentSettings, saved: bool
+    ) -> dict[str, Any]:
+        """Settings plus the bounds the studio needs to constrain its inputs,
+        so the UI and the agent cannot disagree about what is allowed."""
+        limits = agent().deps.config.content_limits
+        return {
+            "campaign_id": campaign_id,
+            "saved": saved,
+            "settings": settings.model_dump(),
+            "limits": {
+                "max_variants_per_asset": limits.max_variants_per_asset,
+                "word_floor": limits.word_floor,
+                "word_ceiling": limits.word_ceiling,
+            },
+            "config_version": agent().deps.config.version,
+        }
+
+    @app.get("/api/box/campaigns/{campaign_id}/content-settings")
+    def content_settings(campaign_id: str) -> dict[str, Any]:
+        """What generation will use. Falls back to the plan volumes and the
+        config word ranges until the writer saves something."""
+        saved = rp_db.load_content_settings(store(), campaign_id)
+        if saved is not None:
+            return _settings_view(campaign_id, saved, saved=True)
+        checklist = _checklist(campaign_id)
+        defaults = defaults_for_checklist(
+            campaign_id, list(checklist.items), agent().deps.config
+        )
+        return _settings_view(campaign_id, defaults, saved=False)
+
+    @app.put("/api/box/campaigns/{campaign_id}/content-settings")
+    def save_content_settings(
+        campaign_id: str, body: ContentSettingsIn
+    ) -> dict[str, Any]:
+        """Identity-stamped and append-only: each save is a new version, and
+        anything beyond the configured ceiling comes back clamped with a note
+        rather than being rejected or applied silently."""
+        existing = rp_db.load_content_settings(store(), campaign_id)
+        if existing is None:
+            checklist = _checklist(campaign_id)
+            baseline = defaults_for_checklist(
+                campaign_id, list(checklist.items), agent().deps.config
+            )
+            next_version = 1
+        else:
+            baseline = existing
+            next_version = existing.version + 1
+
+        updated = apply_requests(
+            campaign_id,
+            next_version,
+            [item.model_dump(exclude_none=True) for item in body.items],
+            baseline,
+            agent().deps.config,
+            set_by=body.actor_id,
+            set_by_role=body.actor_role,
+            note=body.note,
+        )
+        with bridge().run_lock:
+            rp_db.save_content_settings(store(), updated)
+        return _settings_view(campaign_id, updated, saved=True)
 
     @app.get("/api/box/campaigns/{campaign_id}/drafts")
     def drafts(campaign_id: str) -> dict[str, Any]:

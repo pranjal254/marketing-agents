@@ -1,0 +1,24 @@
+{
+  "processName": "content-to-campaign",
+  "version": "1.0.0",
+  "label": "Content to Campaign",
+  "description": "The nine-step campaign journey the Marketing Studio shows. Telemetry stamps a stage id from this pack so cost, latency and escalations can be reported by business step rather than by agent internals.",
+  "stages": [
+    { "stageId": "intake",         "ordinal": 1, "label": "Intake",             "description": "Request captured, validated and completeness-checked; gaps raised back to the requester." },
+    { "stageId": "audience_offer", "ordinal": 2, "label": "Audience and offer", "description": "Personas, segment applicability, value proposition and sourced proof points." },
+    { "stageId": "asset_plan",     "ordinal": 3, "label": "Asset plan",         "description": "Reuse, adapt or create decisions per asset, content outlines and the delivery calendar." },
+    { "stageId": "drafting",       "ordinal": 4, "label": "Drafting",           "description": "Flagship long-form draft, then the derivative fan-out it unlocks." },
+    { "stageId": "review",         "ordinal": 5, "label": "Review",             "description": "Reviewer feedback rounds, conflict resolution and the content-confirmed human gate." },
+    { "stageId": "packaging",      "ordinal": 6, "label": "Packaging",          "description": "Confirmed assets assembled into the Campaign-in-a-Box manifest with content hashes." },
+    { "stageId": "compliance",     "ordinal": 7, "label": "Compliance",         "description": "Deterministic rule checks plus the contextual compliance pass over the packaged set." },
+    { "stageId": "grammar_qa",     "ordinal": 8, "label": "Grammar QA",         "description": "Per-asset language review tasks worked by human reviewers." },
+    { "stageId": "signoff",        "ordinal": 9, "label": "Sign-off",           "description": "Marketing Lead package decision; approval locks the box." }
+  ],
+  "agentDefaultStages": {
+    "campaign_identification": "intake",
+    "campaign_in_a_box": "asset_plan",
+    "content_repurposing": "drafting",
+    "collaboration_iteration": "review",
+    "quality_gate_approval": "compliance"
+  }
+}

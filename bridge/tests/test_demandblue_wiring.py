@@ -108,7 +108,7 @@ def test_demandblue_configs_selected_and_consistent(
     recipes = {r["asset_type"] for r in meta["repurposing"]["recipes"]}
     derivative = {t for t, c in composition.items() if c["review_gate"] == "derivative"}
     assert derivative <= recipes
-    assert meta["repurposing"]["config_version"] == "0.1.0"
+    assert meta["repurposing"]["config_version"] == "0.2.0"
     # The flagship contract holds across Agents 2 and 3.
     flagships = [t for t, c in composition.items() if c["review_gate"] == "flagship"]
     assert flagships == ["flagship_blog"]

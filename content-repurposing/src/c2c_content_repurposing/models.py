@@ -54,6 +54,10 @@ class SelfCheckReport(BaseModel):
     findings: list[dict[str, str]] = Field(default_factory=list)
     unsourced_numeric_tokens: list[str] = Field(default_factory=list)
     missing_brand_mention: bool = False
+    # Length vs the campaign's content settings. None when no range applied.
+    word_count: int | None = None
+    word_range: tuple[int, int] | None = None
+    word_count_in_range: bool = True
 
 
 class DraftSection(BaseModel):

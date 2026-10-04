@@ -38,6 +38,7 @@ from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse
+from shiftai_shared.process import process_context
 from shiftai_shared.resilience import IdempotencyStore, execute_idempotent
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
 from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
@@ -46,7 +47,6 @@ from c2c_collaboration import (
     AGENT_TYPE,
     DATA_CLASSIFICATION,
     MODEL_ID,
-    PROCESS_NAME,
     RISK_TIER,
     RUN_TIMEOUT_S,
     SYSTEM_PROMPT_VERSION,
@@ -133,7 +133,7 @@ class CollaborationAgent:
             environment=deps.settings.shiftai_environment,
             risk_tier=RISK_TIER,
             data_classification=DATA_CLASSIFICATION,
-            process_name=PROCESS_NAME,
+            process=process_context(deps.config.agent_id),
         )
 
     # ------------------------------------------------------------- step 1: stage

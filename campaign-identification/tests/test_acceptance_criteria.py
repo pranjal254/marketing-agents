@@ -174,12 +174,19 @@ def test_7_agent_owns_domain_shared_owns_none() -> None:
     # schema lives at <root>/levelshift-agent-starter-kit/schemas/…; shared/ is a sibling
     shared_src = find_schema_path().parents[2] / "shared" / "src" / "shiftai_shared"
     assert shared_src.is_dir()
-    # users.py is capability content (the workspace user directory) and carries
-    # org role names such as "BU Campaign Lead"; it is exempt like brand/.
+    # Versioned Business Capability content inside shared/ is domain BY DESIGN and
+    # exempt: brand/ (the rules pack), process/ (the nine-step journey telemetry
+    # stamps stage ids from), and users.py (the workspace directory, which carries
+    # org role names such as "BU Campaign Lead"). Everything else is engine code
+    # and must not know the domain exists.
+    capability_dirs = {"brand", "process"}
+    capability_files = {"users.py"}
     offenders = [
         p.name
         for p in shared_src.rglob("*.py")
-        if p.name != "users.py" and "campaign" in p.read_text(encoding="utf-8").lower()
+        if p.name not in capability_files
+        and not (set(p.relative_to(shared_src).parts[:-1]) & capability_dirs)
+        and "campaign" in p.read_text(encoding="utf-8").lower()
     ]
     assert offenders == []
 

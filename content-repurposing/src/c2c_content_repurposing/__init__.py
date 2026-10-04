@@ -10,11 +10,13 @@ behind the shared provider interface). This agent writes drafts into the campaig
 workspace only; no publish/post/send code path exists anywhere in the package.
 """
 
+from shiftai_shared.process import PROCESS_NAME as PROCESS_NAME
+
 __version__ = "0.1.0"
 
 AGENT_ID = "content_repurposing"
 AGENT_TYPE = "decision"
-PROCESS_NAME = "content-to-campaign"
+
 MODEL_ID = "claude-opus-5"
 FLAGSHIP_MAX_TOKENS = 32_000  # spec: 32K flagship, streaming
 DERIVATIVE_MAX_TOKENS = 8_000  # spec: 8K per derivative

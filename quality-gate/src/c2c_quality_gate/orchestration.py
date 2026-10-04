@@ -43,6 +43,7 @@ from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse
+from shiftai_shared.process import STAGE_GRAMMAR_QA, STAGE_SIGNOFF, process_context
 from shiftai_shared.resilience import IdempotencyStore
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
 from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
@@ -52,7 +53,6 @@ from c2c_quality_gate import (
     ASSET_TIMEOUT_S,
     DATA_CLASSIFICATION,
     MODEL_ID,
-    PROCESS_NAME,
     RISK_TIER,
     SYSTEM_PROMPT_VERSION,
 )
@@ -133,7 +133,7 @@ class QualityGateAgent:
             environment=deps.settings.shiftai_environment,
             risk_tier=RISK_TIER,
             data_classification=DATA_CLASSIFICATION,
-            process_name=PROCESS_NAME,
+            process=process_context(deps.config.agent_id),
         )
 
     # ---------------------------------------------------------- steps 1-6: gate
@@ -451,6 +451,8 @@ class QualityGateAgent:
         task = db.load_task(deps.store, campaign_id, task_id)
         if task is None:
             raise GateStateError(f"unknown review task {task_id!r}")
+        # Asset language review is step 8; the package sign-off is step 9.
+        ctx.stage_id = STAGE_SIGNOFF if task.scope == "package" else STAGE_GRAMMAR_QA
         all_tasks = db.load_tasks(deps.store, campaign_id)
         violation = ordered_gate_open(task, all_tasks)
         if violation:
@@ -751,10 +753,16 @@ class QualityGateAgent:
     def _today(self) -> date:
         return datetime.now(tz=UTC).date()
 
-    def _ctx(self, campaign_id: str) -> RunContext:
+    def _ctx(self, campaign_id: str, stage_id: str | None = None) -> RunContext:
+        """``stage_id`` separates this agent's three journey steps. Its default is
+        compliance (the rule and contextual passes); the human review gates say
+        which of the two later steps they are, since asset language review and
+        package sign-off are distinct steps to anyone reading a dashboard."""
         case = box_db.load_plan_case(self.deps.store, campaign_id)
         trace = str(case.get("trace_id", "")) if case else ""
-        return RunContext(case_id=campaign_id, trace_id=trace or new_id("trace"))
+        return RunContext(
+            case_id=campaign_id, trace_id=trace or new_id("trace"), stage_id=stage_id
+        )
 
     def _escalation_event(
         self,

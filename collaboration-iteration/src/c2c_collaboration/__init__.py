@@ -13,11 +13,13 @@ package sets it autonomously. Model: claude-sonnet-5 (Azure OpenAI is the
 dev/test substitute behind the shared provider interface).
 """
 
+from shiftai_shared.process import PROCESS_NAME as PROCESS_NAME
+
 __version__ = "0.1.0"
 
 AGENT_ID = "collaboration_iteration"
 AGENT_TYPE = "decision"
-PROCESS_NAME = "content-to-campaign"
+
 MODEL_ID = "claude-sonnet-5"
 MAX_OUTPUT_TOKENS = 16_000  # spec
 RUN_TIMEOUT_S = 600.0  # 10 minutes per revision-application run (spec Timeout)

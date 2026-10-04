@@ -6,9 +6,10 @@ Scope note (Agent 2 build): shared/ hosts three kinds of module —
      context store, LLM interface, prompting, hashing) — strictly domain-free;
   2. the connector layer (m365/, semrush/) — vendor naming is inherent to a
      connector, but campaign-domain vocabulary stays banned;
-  3. versioned Business Capability content (brand/) — domain content BY DESIGN
-     (the cross-agent brand rules pack consumed by Agents 2, 3, 5); exempt from
-     the vocabulary scan, still barred from importing agent packages.
+  3. versioned Business Capability content (brand/, process/) — domain content
+     BY DESIGN (the cross-agent brand rules pack consumed by Agents 2, 3, 5;
+     the nine-step journey pack every agent stamps stage ids from); exempt
+     from the vocabulary scan, still barred from importing agent packages.
 config.py may name connector env vars (SEMRUSH_*) exactly as it names GRAPH_*.
 """
 
@@ -41,7 +42,10 @@ CONNECTOR_DIRS = {"m365", "semrush"}
 CONNECTOR_ALLOWED = {"semrush", "brief"}  # vendor name + generic connector docstrings
 
 # Versioned Business Capability content — domain by design, exempt from the scan.
-CAPABILITY_DIRS = {"brand"}
+# brand/: the cross-agent brand rules pack. process/: the nine-step journey
+# definition telemetry stamps stage ids from (its engine half, the
+# ProcessContext shape, stays domain-free in telemetry/process.py).
+CAPABILITY_DIRS = {"brand", "process"}
 # Capability content that lives as a single module rather than a directory: the
 # workspace user directory carries org role names (e.g. "BU Campaign Lead").
 CAPABILITY_FILES = {"users.py"}

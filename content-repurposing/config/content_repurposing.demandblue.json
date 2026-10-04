@@ -1,7 +1,7 @@
 {
   "agentType": "decision",
   "agentId": "content_repurposing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "recipeStatus": "0.1.0-draft — DemandBlue (Salesforce practice) channel recipes mapped from the marketing team's real asset vocabulary (email nurture TPs, SM posts, ISR scripts, CSS, one-pagers); pending DemandBlue Marketing Lead sign-off",
   "flagshipAssetType": "flagship_blog",
   "maxRegenerations": 2,
@@ -62,14 +62,86 @@
       "mustNameBrand": false
     }
   ],
+  "contentLimits": {
+    "maxVariantsPerAsset": 11,
+    "wordFloor": 40,
+    "wordCeiling": 5000,
+    "defaultWordRange": {
+      "min": 120,
+      "max": 300
+    },
+    "byAssetType": {
+      "flagship_blog": {
+        "min": 900,
+        "max": 1400
+      },
+      "linkedin_posts": {
+        "min": 60,
+        "max": 150
+      },
+      "email_touchpoints": {
+        "min": 80,
+        "max": 180
+      },
+      "battle_card": {
+        "min": 150,
+        "max": 350
+      },
+      "external_one_pager": {
+        "min": 250,
+        "max": 500
+      },
+      "faq_service_page": {
+        "min": 200,
+        "max": 500
+      },
+      "case_study": {
+        "min": 600,
+        "max": 1000
+      },
+      "community_draft": {
+        "min": 100,
+        "max": 250
+      },
+      "call_scripts": {
+        "min": 150,
+        "max": 350
+      },
+      "enablement_notes": {
+        "min": 150,
+        "max": 400
+      }
+    }
+  },
   "routingMap": [
-    { "reason": "unsourced_claim", "routesTo": "marketing-lead-queue" },
-    { "reason": "selfcheck_failed", "routesTo": "marketing-lead-queue" },
-    { "reason": "outline_divergence", "routesTo": "marketing-lead-queue" },
-    { "reason": "sequencing_violation", "routesTo": "aicoe-queue" },
-    { "reason": "workspace_failure", "routesTo": "aicoe-queue" },
-    { "reason": "tool_failure", "routesTo": "aicoe-queue" },
-    { "reason": "plan_not_ready", "routesTo": "marketing-lead-queue" }
+    {
+      "reason": "unsourced_claim",
+      "routesTo": "marketing-lead-queue"
+    },
+    {
+      "reason": "selfcheck_failed",
+      "routesTo": "marketing-lead-queue"
+    },
+    {
+      "reason": "outline_divergence",
+      "routesTo": "marketing-lead-queue"
+    },
+    {
+      "reason": "sequencing_violation",
+      "routesTo": "aicoe-queue"
+    },
+    {
+      "reason": "workspace_failure",
+      "routesTo": "aicoe-queue"
+    },
+    {
+      "reason": "tool_failure",
+      "routesTo": "aicoe-queue"
+    },
+    {
+      "reason": "plan_not_ready",
+      "routesTo": "marketing-lead-queue"
+    }
   ],
   "reasonCodes": [
     "unsourced_claim",

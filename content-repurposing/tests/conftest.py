@@ -18,7 +18,11 @@ from shiftai_shared.llm import MockLLMProvider
 from shiftai_shared.resilience import InMemoryIdempotencyStore
 from shiftai_shared.telemetry import InMemorySink
 
-from c2c_content_repurposing.agent_config import RepurposingConfig, load_repurposing_config
+from c2c_content_repurposing.agent_config import (
+    RepurposingConfig,
+    WordRange,
+    load_repurposing_config,
+)
 from c2c_content_repurposing.orchestration import ContentRepurposingAgent, RepurposingDeps
 
 AGENT_ROOT = Path(__file__).resolve().parents[1]
@@ -209,7 +213,26 @@ def seed_box_plan(
 
 @pytest.fixture()
 def config() -> RepurposingConfig:
-    return load_repurposing_config(CONFIG_PATH)
+    """The shipped config, with the length limits widened for tests.
+
+    Mock drafts here are a few dozen words on purpose, so assertions stay
+    readable and runs stay fast. The shipped word ranges (a flagship is 900 to
+    1,400 words) would fail every one of them on length and mask what each test
+    is actually about. Length behaviour has its own tests, which use the real
+    ranges — see test_content_settings.py.
+    """
+    shipped = load_repurposing_config(CONFIG_PATH)
+    return shipped.model_copy(
+        update={
+            "content_limits": shipped.content_limits.model_copy(
+                update={
+                    "word_floor": 1,
+                    "default_word_range": WordRange(min=1, max=10_000),
+                    "by_asset_type": {},
+                }
+            )
+        }
+    )
 
 
 @pytest.fixture()

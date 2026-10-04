@@ -26,6 +26,7 @@ from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse
+from shiftai_shared.process import process_context
 from shiftai_shared.prompting import PROMPT_TEMPLATE_ID, PROMPT_TEMPLATE_VERSION
 from shiftai_shared.resilience import IdempotencyStore, execute_idempotent
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
@@ -37,7 +38,6 @@ from campaign_identification import (
     DATA_CLASSIFICATION,
     MAX_GAP_ROUNDS,
     MODEL_ID,
-    PROCESS_NAME,
     RISK_TIER,
     RUN_TIMEOUT_S,
     SYSTEM_PROMPT_VERSION,
@@ -114,7 +114,7 @@ class CampaignIdentificationAgent:
             environment=deps.settings.shiftai_environment,
             risk_tier=RISK_TIER,
             data_classification=DATA_CLASSIFICATION,
-            process_name=PROCESS_NAME,
+            process=process_context(deps.config.agent_id),
         )
 
     # ------------------------------------------------------------------ intake

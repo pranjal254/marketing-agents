@@ -17,6 +17,8 @@ asset whose checks cannot complete never advances. Model: claude-sonnet-5
 (Azure OpenAI is the dev/test substitute behind the shared provider interface).
 """
 
+from shiftai_shared.process import PROCESS_NAME as PROCESS_NAME
+
 __version__ = "0.1.0"
 
 AGENT_ID = "quality_gate_approval"
@@ -24,7 +26,7 @@ AGENT_ID = "quality_gate_approval"
 # the STS v2 kit taxonomy knows decision/enrichment/orchestrator — the gate's
 # verdicts make it a decision agent there. The business config keeps "hybrid".
 AGENT_TYPE = "decision"
-PROCESS_NAME = "content-to-campaign"
+
 MODEL_ID = "claude-sonnet-5"
 MAX_OUTPUT_TOKENS = 8_000  # spec: per-asset report (contextual pass)
 ASSET_TIMEOUT_S = 300.0  # spec: 5 minutes per asset check

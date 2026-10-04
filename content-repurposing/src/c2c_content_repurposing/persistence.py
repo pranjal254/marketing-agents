@@ -1,5 +1,6 @@
 """Context Store persistence for Agent 3 — versioned, append-only records
-(repurpose case, staged drafts with lineage, claim inventory, gap notes, failures)."""
+(repurpose case, staged drafts with lineage, claim inventory, gap notes,
+per-campaign content settings, failures)."""
 
 from __future__ import annotations
 
@@ -8,6 +9,7 @@ from typing import Any
 
 from shiftai_shared.context_store.store import ContextStore
 
+from c2c_content_repurposing.content_settings import ContentSettings
 from c2c_content_repurposing.models import ClaimInventory, GapNote, StagedDraft
 
 KIND_REPURPOSE_CASE = "repurpose_case"
@@ -15,6 +17,7 @@ KIND_STAGED_DRAFT = "staged_draft"
 KIND_CLAIM_INVENTORY = "claim_inventory"
 KIND_GAP_NOTE = "content_gap_note"
 KIND_FAILED_RUN = "failed_repurpose_run"
+KIND_CONTENT_SETTINGS = "content_settings"
 
 
 def _now() -> str:
@@ -95,3 +98,22 @@ def save_failed_run(
         f"{campaign_id}:{_now()}",
         {"campaign_id": campaign_id, "error_type": error_type, "detail": detail},
     )
+
+
+def save_content_settings(store: ContextStore, settings: ContentSettings) -> None:
+    """Append a new version. Earlier versions stay readable: who asked for how
+    many of what, and when, is an audit question people come back to."""
+    store.put(KIND_CONTENT_SETTINGS, settings.campaign_id, settings.model_dump())
+
+
+def load_content_settings(store: ContextStore, campaign_id: str) -> ContentSettings | None:
+    record = store.get(KIND_CONTENT_SETTINGS, campaign_id)
+    return ContentSettings.model_validate(record.value) if record else None
+
+
+def content_settings_history(store: ContextStore, campaign_id: str) -> list[ContentSettings]:
+    """Oldest first."""
+    return [
+        ContentSettings.model_validate(r.value)
+        for r in store.get_all_versions(KIND_CONTENT_SETTINGS, campaign_id)
+    ]

@@ -40,6 +40,7 @@ from shiftai_shared.config import SharedSettings, runtime_rate_card
 from shiftai_shared.context_store.store import ContextStore
 from shiftai_shared.control_plane import KillSwitch, RateBreaker, guard_layer4
 from shiftai_shared.llm import LLMProvider, LLMResponse, SystemBlock
+from shiftai_shared.process import process_context
 from shiftai_shared.resilience import IdempotencyStore, execute_idempotent
 from shiftai_shared.telemetry import StsEmitter, TelemetrySink
 from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
@@ -53,7 +54,6 @@ from c2c_content_repurposing import (
     FLAGSHIP_MAX_TOKENS,
     FLAGSHIP_TIMEOUT_S,
     MODEL_ID,
-    PROCESS_NAME,
     RISK_TIER,
     SYSTEM_PROMPT_VERSION,
 )
@@ -61,6 +61,7 @@ from c2c_content_repurposing import documents as docs
 from c2c_content_repurposing import generation as gen
 from c2c_content_repurposing import persistence as db
 from c2c_content_repurposing.agent_config import RepurposingConfig
+from c2c_content_repurposing.content_settings import resolve
 from c2c_content_repurposing.fanout import DerivativeJob, build_fanout_jobs, run_fanout_jobs
 from c2c_content_repurposing.grounding import (
     deterministic_inventory,
@@ -133,7 +134,7 @@ class ContentRepurposingAgent:
             environment=deps.settings.shiftai_environment,
             risk_tier=RISK_TIER,
             data_classification=DATA_CLASSIFICATION,
-            process_name=PROCESS_NAME,
+            process=process_context(deps.config.agent_id),
         )
 
     # ------------------------------------------------------------ flagship pass
@@ -350,6 +351,16 @@ class ContentRepurposingAgent:
             status=status, draft=draft, gap_notes=gap_notes, escalation_reasons=escalations,
         )
 
+    def _flagship_word_range(self, campaign_id: str) -> tuple[int, int]:
+        """The length this campaign asks of its flagship. The Content Writer's
+        setting when there is one, the config default when there is not."""
+        flagship_id = self.deps.config.flagship_asset_type
+        chosen = resolve(
+            db.load_content_settings(self.deps.store, campaign_id),
+            flagship_id, flagship_id, 1, self.deps.config,
+        )
+        return chosen.min_words, chosen.max_words
+
     def _generate_flagship(
         self,
         ctx: RunContext,
@@ -362,6 +373,7 @@ class ContentRepurposingAgent:
         """Generate → ground → self-check loop (regenerate ≤ max, then withhold).
         Returns None only when the model output stayed unparsable."""
         config = self.deps.config
+        min_words, max_words = self._flagship_word_range(campaign_id)
         feedback: list[str] | None = None
         last: tuple[str, list[DraftSection], list[ClaimMarker], list[GapNote],
                     SelfCheckReport] | None = None
@@ -369,7 +381,10 @@ class ContentRepurposingAgent:
             with ctx.span("l3-flagship-draft", "llm") as span:
                 output, response, truncated = gen.run_json_call(
                     self.deps.provider, blocks,
-                    gen.flagship_user_prompt(payload, feedback, instruction),
+                    gen.flagship_user_prompt(
+                        payload, feedback, instruction,
+                        min_words=min_words, max_words=max_words,
+                    ),
                     FlagshipLLMOutput,
                     max_tokens=FLAGSHIP_MAX_TOKENS,
                     timeout_s=FLAGSHIP_TIMEOUT_S,
@@ -399,6 +414,7 @@ class ContentRepurposingAgent:
             report = run_self_check(
                 text, self.deps.brand_rules,
                 unsourced_numeric_tokens=unsourced, attempts=attempt,
+                word_range=(min_words, max_words),
             )
             last = (output.title, sections, markers, gaps, report)
             if report.passed or attempt > config.max_regenerations:
@@ -523,7 +539,8 @@ class ContentRepurposingAgent:
         inventory = self._ensure_inventory(ctx, campaign_id, flagship, flagship_version,
                                            blocks, folder, slug)
 
-        jobs, skipped = build_fanout_jobs(checklist, config)
+        settings = db.load_content_settings(deps.store, campaign_id)
+        jobs, skipped = build_fanout_jobs(checklist, config, settings)
         already_staged = {
             d.asset_id for d in db.load_drafts(deps.store, campaign_id)
             if d.kind == "derivative" and d.status == "staged"
@@ -686,6 +703,7 @@ class ContentRepurposingAgent:
                     gen.derivative_user_prompt(
                         job.recipe, job.volume, inventory, audience_note,
                         instruction=instruction, selfcheck_feedback=feedback,
+                        min_words=job.min_words, max_words=job.max_words,
                     ),
                     DerivativeLLMOutput,
                     max_tokens=DERIVATIVE_MAX_TOKENS,
@@ -730,6 +748,8 @@ class ContentRepurposingAgent:
                 unsourced_numeric_tokens=unsourced,
                 must_name_brand=job.recipe.must_name_brand,
                 attempts=attempt,
+                # Length is per variant, so the range scales with the count.
+                word_range=(job.min_words * job.volume, job.max_words * job.volume),
             )
             if not variants_sections:
                 report = report.model_copy(update={"passed": False})
@@ -909,9 +929,14 @@ class ContentRepurposingAgent:
             raise RepurposeGateError(f"no channel recipe for asset type {item.asset_type!r}")
         prior = db.latest_draft(self.deps.store, campaign_id, asset_id)
         blocks = gen.system_blocks(self.deps.config, self.deps.brand_rules)
+        chosen = resolve(
+            db.load_content_settings(self.deps.store, campaign_id),
+            asset_id, item.asset_type, max(item.volume, 1), self.deps.config,
+        )
         job = DerivativeJob(
             asset_id=asset_id, asset_type=item.asset_type,
-            recipe=recipe, volume=max(item.volume, 1),
+            recipe=recipe, volume=chosen.variants,
+            min_words=chosen.min_words, max_words=chosen.max_words,
         )
         draft = self._generate_derivative(
             ctx, campaign_id, job, inventory, blocks,

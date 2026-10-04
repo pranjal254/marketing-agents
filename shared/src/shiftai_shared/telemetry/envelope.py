@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from shiftai_shared.config import CACHE_READ_INPUT_RATE, DEFAULT_RATE_CARD
+from shiftai_shared.telemetry.process import STAGE_ATTRIBUTE
 
 
 def new_id(prefix: str) -> str:
@@ -95,6 +96,10 @@ class RunContext:
     case_id: str
     trace_id: str
     run_id: str = field(default_factory=lambda: new_id("run"))
+    # The process step this run belongs to, when it differs from the emitting
+    # agent's default. An agent spanning several steps sets it per pipeline; a
+    # single call that differs again overrides it at the emit site.
+    stage_id: str | None = None
     monotonic: Callable[[], float] = time.monotonic
     spans: list[SpanRecord] = field(default_factory=list)
     total_cost_usd: float = 0.0
@@ -127,7 +132,10 @@ class RunContext:
 
     def run_attributes(self) -> dict[str, Any]:
         """Additive Standard-B attributes carried on every record of this run."""
-        return {"shiftai.run.id": self.run_id}
+        attrs: dict[str, Any] = {"shiftai.run.id": self.run_id}
+        if self.stage_id:
+            attrs[STAGE_ATTRIBUTE] = self.stage_id
+        return attrs
 
     def summary_attributes(self) -> dict[str, Any]:
         lat = self.latency_breakdown_ms()

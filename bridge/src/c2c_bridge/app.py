@@ -773,6 +773,16 @@ def create_app(
 
     register_gate_routes(app, bridge)
 
+    # ------------------------- Aggregated export for the Execution Studio
+    from c2c_bridge.telemetry_routes import register_telemetry_routes
+
+    register_telemetry_routes(app, bridge)
+
+    # ----------------------------------------- Ask anything (Beta, read-only)
+    from c2c_bridge.ask_routes import register_ask_routes
+
+    register_ask_routes(app, bridge)
+
     return app
 
 
