@@ -223,13 +223,21 @@ the routes exist in the code but not on the server.
 
 ## 6. Postman
 
-Import `bridge/postman/ShiftAI-C2C-Bridge.postman_collection.json`. Five
-folders, twenty requests, every path verified against the live bridge.
+Import both files from `bridge/postman/`:
 
-Set the `token` collection variable to `BRIDGE_API_TOKEN` and you can run
-everything. `baseUrl` defaults to the hosted bridge; point it at
+- `ShiftAI-C2C-Bridge.postman_collection.json`: five folders, twenty requests,
+  every path verified against the live bridge
+- `ShiftAI-C2C-Bridge.postman_environment.json`: the variables, with the one
+  secret left blank for you to fill
+
+Select the environment, paste `BRIDGE_API_TOKEN` into `token`, and everything
+runs. `baseUrl` defaults to the hosted bridge; point it at
 `http://localhost:8787` for a local one. `campaignId` and `caseId` come
 prefilled with real ids, so most requests work on the first click.
+
+For wiring the AiCoE app itself rather than Postman, the full set of values a
+consuming app needs is `bridge/postman/aicoe-integration.env.example`. There
+are two of them.
 
 The collection also covers the campaign, draft, review and gate endpoints, in
 case the dashboard wants more than the rollup.

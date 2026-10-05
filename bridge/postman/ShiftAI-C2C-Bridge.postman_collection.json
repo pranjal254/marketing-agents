@@ -34,6 +34,11 @@
       "key": "caseId",
       "value": "case_556e3ecb4f74",
       "description": "The intake case behind that campaign."
+    },
+    {
+      "key": "actorId",
+      "value": "",
+      "description": "Optional. Attributes assistant conversations. Not authentication."
     }
   ],
   "item": [
@@ -469,7 +474,7 @@
             "description": "Runs a short loop of read-only tool calls over the agents' records, then answers.\n\nReturns the answer, the references it cited, and tool_calls showing every lookup it made. Pass conversation_id to continue a thread.\n\nBounded at six lookups and $0.50 per question. It cannot perform actions.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"question\": \"Which campaigns are closest to sign-off?\",\n  \"actor_id\": \"you@levelshift.com\",\n  \"conversation_id\": null\n}",
+              "raw": "{\n  \"question\": \"Which campaigns are closest to sign-off?\",\n  \"actor_id\": \"{{actorId}}\",\n  \"conversation_id\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -484,7 +489,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/ask/conversations?actor_id=you@levelshift.com",
+              "raw": "{{baseUrl}}/api/ask/conversations?actor_id={{actorId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -496,7 +501,7 @@
               "query": [
                 {
                   "key": "actor_id",
-                  "value": "you@levelshift.com",
+                  "value": "{{actorId}}",
                   "description": "Filter to one person; omit for all"
                 }
               ]
