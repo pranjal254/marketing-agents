@@ -279,14 +279,20 @@ def aggregate_records(
         if isinstance(timestamp, str):
             first_at = timestamp if first_at is None or timestamp < first_at else first_at
             last_at = timestamp if last_at is None or timestamp > last_at else last_at
-        if not source:
-            source = {
-                "sts_schema_version": record.get(A_SCHEMA_VERSION),
-                "process_name": record.get(A_PROCESS_NAME),
-                "process_version": record.get(A_PROCESS_VERSION),
-                "tenant_id": record.get(A_TENANT),
-                "environment": record.get(A_ENVIRONMENT),
-            }
+        # Fill each identity field from the first record that actually carries
+        # it, rather than taking them all from the first record. Not every
+        # emitter sets every field: one that serves no single process emits no
+        # process name, and a batch that happens to start with such a record
+        # would otherwise report no process at all.
+        for field, attribute in (
+            ("sts_schema_version", A_SCHEMA_VERSION),
+            ("process_name", A_PROCESS_NAME),
+            ("process_version", A_PROCESS_VERSION),
+            ("tenant_id", A_TENANT),
+            ("environment", A_ENVIRONMENT),
+        ):
+            if source.get(field) is None and record.get(attribute) is not None:
+                source[field] = record[attribute]
         cursor = _advance_cursor(cursor, record)
 
     return {

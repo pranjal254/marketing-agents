@@ -203,3 +203,28 @@ def test_cost_with_no_scope_is_still_counted() -> None:
     """Only an explicit run_total is skipped; an unscoped cost is real spend."""
     snapshot = aggregate_records([_record(1, cost=0.25)])
     assert snapshot["totals"]["cost_usd"] == 0.25
+
+
+def test_process_identity_survives_a_batch_that_opens_with_a_process_free_record() -> None:
+    """Not every emitter serves one process: the studio assistant sets no
+    process name. A batch starting with one of its records must still report
+    the process the rest of the batch belongs to."""
+    assistant = _record(1, agent="studio_assistant")
+    for attribute in ("shiftai.process.name", "shiftai.process.version",
+                      "shiftai.stage.id", "shiftai.stage.ordinal"):
+        assistant.pop(attribute)
+
+    snapshot = aggregate_records([assistant, _record(2)])
+    assert snapshot["source"]["process_name"] == "content-to-campaign"
+    assert snapshot["source"]["process_version"] == "1.0.0"
+    assert snapshot["source"]["tenant_id"] == "levelshift"
+
+
+def test_a_batch_of_only_process_free_records_reports_no_process() -> None:
+    """The honest answer when nothing in the batch claims a process."""
+    assistant = _record(1, agent="studio_assistant")
+    for attribute in ("shiftai.process.name", "shiftai.process.version"):
+        assistant.pop(attribute)
+    snapshot = aggregate_records([assistant])
+    assert snapshot["source"].get("process_name") is None
+    assert snapshot["source"]["tenant_id"] == "levelshift"

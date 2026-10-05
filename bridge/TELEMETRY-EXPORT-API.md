@@ -196,6 +196,19 @@ deployment is doing. The studio itself now does the same, so the two agree.
 
 ## 5. Things to know before you build
 
+**`by_outcome` counts, it does not cost.** An outcome is recorded on a run
+summary, and run summaries restate spend rather than adding it, so every
+`by_outcome` row reports `cost_usd` at or near zero. Use it for "how many runs
+succeeded", never for "what did failure cost us". The same applies to
+`by_escalation_reason` and `by_human_gate_decision`: treat their `records`,
+`escalations` and `human_gates` as the real figures and ignore their cost.
+Cost lives on `by_stage`, `by_agent` and `by_model`.
+
+**An empty `by_stage` means no agent has run.** The studio assistant is the one
+emitter with no stage, so a snapshot containing only assistant traffic has a
+populated `by_agent` and an empty `by_stage`. That is not a bug in the export;
+it means the window covered questions but no campaign work.
+
 **The studio assistant has no stage.** It answers questions across the whole
 journey, so attributing its spend to any one step would misreport that step. It
 appears in `by_agent` as `studio_assistant` and never in `by_stage`. That means
