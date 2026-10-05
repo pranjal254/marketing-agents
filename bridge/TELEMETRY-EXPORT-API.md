@@ -197,6 +197,9 @@ deployment is doing. The studio itself now does the same, so the two agree.
 
 ## 5. Things to know before you build
 
+What follows is the list of ways this payload can be read wrongly. None of them
+is a defect; all of them have bitten someone already.
+
 **Some labels are lists, on purpose.** A label that is genuinely one-to-one
 with its row key is a string: `stage_label`, `agent_type`, `routed_to`. A label
 that is many-to-one is a sorted list, because reporting the first value seen
@@ -208,6 +211,24 @@ approve things.
 For "who works the gates and how often", use **`by_human_gate_role`**, keyed
 the other way round. On a real campaign the content reviewer worked 10 gates
 and the BU lead 2, which the decision-keyed view alone cannot show you.
+
+**Count gates with `human_gates`, not `records`.** In a
+`by_human_gate_decision` row you will see `records: 24` beside
+`human_gates: 23`. Both are right and they measure different things:
+`records` counts every record carrying that decision, and a `case_resolved`
+record restates the human decision that closed the case on top of the
+`human_gate` record itself. `human_gates` is the count of actual gate events.
+The same rule holds everywhere: use the named metric (`human_gates`,
+`escalations`, `errors`, `llm_calls`), not `records`, when you mean that thing.
+
+**`totals.cases` is not a campaign count.** It counts distinct
+`shiftai.case.id` values, and the agents correlate on two different id
+namespaces: intake works in `case_…` ids, everything from planning onward works
+in `cmp_…` ids. One campaign that was requested once and then planned, drafted
+and shipped therefore contributes two ids, and a request rejected at intake
+contributes one with no campaign behind it. Read `cases` as "distinct units of
+work seen", and do not label it "campaigns" on a dashboard. A per-campaign
+breakdown is a known gap, not something to derive from this field.
 
 **`by_outcome` counts, it does not cost.** An outcome is recorded on a run
 summary, and run summaries restate spend rather than adding it, so every
