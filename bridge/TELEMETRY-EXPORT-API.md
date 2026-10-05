@@ -221,7 +221,20 @@ unaffected. **Tell AiCoE your origin before you start.**
 Deployment follows a push to `main`, so there is a window after a release where
 the routes exist in the code but not on the server.
 
-## 6. Quick start
+## 6. Postman
+
+Import `bridge/postman/ShiftAI-C2C-Bridge.postman_collection.json`. Five
+folders, twenty requests, every path verified against the live bridge.
+
+Set the `token` collection variable to `BRIDGE_API_TOKEN` and you can run
+everything. `baseUrl` defaults to the hosted bridge; point it at
+`http://localhost:8787` for a local one. `campaignId` and `caseId` come
+prefilled with real ids, so most requests work on the first click.
+
+The collection also covers the campaign, draft, review and gate endpoints, in
+case the dashboard wants more than the rollup.
+
+## 7. Quick start
 
 ```bash
 TOKEN=...   # from AiCoE
@@ -240,7 +253,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" "$BASE/api/telemetry/export/re
   | jq '{refreshed, records_added, next_refresh_at}'
 ```
 
-## 7. Questions
+## 8. Questions
 
 Contact AiCoE. Useful to say which origin you are calling from, whether you
 want dev or production figures, and whether six hours is the right refresh

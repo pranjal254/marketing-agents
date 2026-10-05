@@ -1,0 +1,510 @@
+{
+  "info": {
+    "name": "ShiftAI Content to Campaign bridge",
+    "description": "Read endpoints for integrating the Content to Campaign agent fleet.\n\nSETUP\n1. Set the `token` collection variable to BRIDGE_API_TOKEN (the env var on the c2c-agent-bridge Render service). Every request except Health needs it.\n2. `baseUrl` defaults to the hosted bridge. Point it at http://localhost:8787 to work against a local one.\n3. `campaignId` and `caseId` are prefilled with real ids. Run 'Campaigns: list' to find others.\n\nSTART HERE: Telemetry > Export (banked snapshot). That is the aggregated rollup a dashboard reads.\n\nEverything here is READ-ONLY except 'Export: refresh', which recomputes the snapshot and is rate limited to once per six hours. No request in this collection advances a campaign or clears a human gate.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://c2c-agent-bridge.onrender.com",
+      "description": "Hosted bridge. Use http://localhost:8787 for a local one."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "BRIDGE_API_TOKEN. Required on every route except /api/health."
+    },
+    {
+      "key": "campaignId",
+      "value": "cmp_388421a678",
+      "description": "A real packaged campaign to read."
+    },
+    {
+      "key": "caseId",
+      "value": "case_556e3ecb4f74",
+      "description": "The intake case behind that campaign."
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Discovery",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "No auth. Confirms the bridge is up and which models actually run.\n\n`model` is what answers; `target_model` is the id the spec routes to. They differ whenever the deployment substitutes, which it does today: Azure serves every agent.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Meta: fleet and config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/meta",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "meta"
+              ]
+            },
+            "description": "Per-agent config versions, models, composition, channel recipes, reviewer map, gate policy and reason codes. Useful for rendering agent cards and for checking which config pack a deployment is on."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Telemetry (start here)",
+      "item": [
+        {
+          "name": "Export: banked snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/telemetry/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "telemetry",
+                "export"
+              ]
+            },
+            "description": "THE INTEGRATION TARGET. An aggregated rollup, served from the database without recomputing, so it is cheap to poll.\n\nBreakdowns: by_stage (the nine journey steps), by_agent, by_event_type, by_model, by_outcome, by_escalation_reason, by_human_gate_decision. Each row carries records, llm_calls, tokens, cost_usd, latency, escalations, human_gates, errors.\n\n`process.stages` ships with every response, so render stages from it and sort by `ordinal` rather than hardcoding the journey.\n\nNOTE: the studio assistant has no stage, so sum(by_stage.cost_usd) is less than totals.cost_usd by design. Use totals for the headline, by_stage for the split."
+          }
+        },
+        {
+          "name": "Export: refresh",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/telemetry/export/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "telemetry",
+                "export",
+                "refresh"
+              ]
+            },
+            "description": "Recompute and bank. Rate limited to one per six hours.\n\nCalling early is NOT an error: you get 200 with refreshed=false, the banked snapshot and a next_refresh_at. A polling client needs no special case."
+          }
+        },
+        {
+          "name": "Export: refresh (force)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/telemetry/export/refresh?force=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "telemetry",
+                "export",
+                "refresh"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "true",
+                  "description": "Bypass the rate limit"
+                }
+              ]
+            },
+            "description": "Ignore the six-hour limit. For testing."
+          }
+        },
+        {
+          "name": "Export: rebuild",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/telemetry/export/refresh?rebuild=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "telemetry",
+                "export",
+                "refresh"
+              ],
+              "query": [
+                {
+                  "key": "rebuild",
+                  "value": "true",
+                  "description": "Discard banked figures first"
+                }
+              ]
+            },
+            "description": "Discard the banked figures and recompute from the raw stream alone.\n\nThe raw stream is per-session, so a rebuild usually returns a SMALLER total rather than a corrected one. Only use it to supersede a snapshot you know to be wrong."
+          }
+        },
+        {
+          "name": "Export: history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/telemetry/export/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "telemetry",
+                "export",
+                "history"
+              ]
+            },
+            "description": "When each snapshot was taken and how much it held. Metadata only."
+          }
+        },
+        {
+          "name": "Raw STS stream",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/telemetry?after=0&limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "telemetry"
+              ],
+              "query": [
+                {
+                  "key": "after",
+                  "value": "0",
+                  "description": "Return records after this bridge.seq"
+                },
+                {
+                  "key": "limit",
+                  "value": "200",
+                  "description": "Max 1000"
+                }
+              ]
+            },
+            "description": "The raw telemetry records behind the rollup, oldest first. Use for drill-down; use the export for dashboards.\n\nRecords are STS v2.0.0. Every one carries shiftai.stage.id and shiftai.stage.ordinal, so you can group by journey step yourself."
+          }
+        },
+        {
+          "name": "Live SSE feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stream?after=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stream"
+              ],
+              "query": [
+                {
+                  "key": "after",
+                  "value": "0",
+                  "description": "Resume from this bridge.seq"
+                }
+              ]
+            },
+            "description": "Server-sent events, one STS record per message, as they happen.\n\nPostman can open it but will not render it well. Browser clients pass ?token= instead of a header, since EventSource cannot set one."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Campaigns (read)",
+      "item": [
+        {
+          "name": "Campaigns: list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/box/campaigns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "box",
+                "campaigns"
+              ]
+            },
+            "description": "Every campaign with its planning status and confirmation flags. Start here to find a campaignId."
+          }
+        },
+        {
+          "name": "Campaign: detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/box/campaigns/{{campaignId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "box",
+                "campaigns",
+                "{{campaignId}}"
+              ]
+            },
+            "description": "The whole plan: audience and offer pack with sourced proof points, asset checklist with reuse/adapt/create decisions, content outlines, the schedule, the package manifest with content hashes, and the completeness report."
+          }
+        },
+        {
+          "name": "Campaign: drafts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/box/campaigns/{{campaignId}}/drafts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "box",
+                "campaigns",
+                "{{campaignId}}",
+                "drafts"
+              ]
+            },
+            "description": "Written assets with their prose, claim markers, gap notes and the generation self-check, including word counts against the campaign's content settings."
+          }
+        },
+        {
+          "name": "Campaign: review state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/box/campaigns/{{campaignId}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "box",
+                "campaigns",
+                "{{campaignId}}",
+                "review"
+              ]
+            },
+            "description": "Reviewer feedback, review rounds, unresolved conflicts and content confirmations per asset."
+          }
+        },
+        {
+          "name": "Campaign: quality gate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/box/campaigns/{{campaignId}}/gate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "box",
+                "campaigns",
+                "{{campaignId}}",
+                "gate"
+              ]
+            },
+            "description": "Compliance findings per asset, the sequenced human review tasks and who holds them, the approval chain with identity and hash, and the content locks."
+          }
+        },
+        {
+          "name": "Campaign: content settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/box/campaigns/{{campaignId}}/content-settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "box",
+                "campaigns",
+                "{{campaignId}}",
+                "content-settings"
+              ]
+            },
+            "description": "How many variants of each asset this campaign asks for and the word range for each, plus who set them and anything the agent clamped.\n\nBefore anything is saved this returns the config defaults with saved=false."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Intake cases (read)",
+      "item": [
+        {
+          "name": "Cases: list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cases"
+              ]
+            },
+            "description": "Campaign requests in flight, including ones still waiting on the requester."
+          }
+        },
+        {
+          "name": "Case: detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cases",
+                "{{caseId}}"
+              ]
+            },
+            "description": "The original request: brief fields with provenance, classification, gap questions, conflicts and the approval decision."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Assistant (Beta)",
+      "item": [
+        {
+          "name": "Ask: meta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ask/meta",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ask",
+                "meta"
+              ]
+            },
+            "description": "The assistant's model, version and tool catalogue, and an explicit statement that it cannot perform actions."
+          }
+        },
+        {
+          "name": "Ask: a question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ask"
+              ]
+            },
+            "description": "Runs a short loop of read-only tool calls over the agents' records, then answers.\n\nReturns the answer, the references it cited, and tool_calls showing every lookup it made. Pass conversation_id to continue a thread.\n\nBounded at six lookups and $0.50 per question. It cannot perform actions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Which campaigns are closest to sign-off?\",\n  \"actor_id\": \"you@levelshift.com\",\n  \"conversation_id\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Ask: conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ask/conversations?actor_id=you@levelshift.com",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ask",
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "actor_id",
+                  "value": "you@levelshift.com",
+                  "description": "Filter to one person; omit for all"
+                }
+              ]
+            },
+            "description": "Past conversations, newest first."
+          }
+        }
+      ]
+    }
+  ]
+}
