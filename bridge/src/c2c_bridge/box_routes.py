@@ -18,6 +18,8 @@ from c2c_campaign_box.orchestration import CampaignBoxOrchestrator, PlanGateErro
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from shiftai_shared.context_store.store import latest_many
+from shiftai_shared.llm import effective_model
 from shiftai_shared.m365.word import DocSection, DocSpec, build_docx
 
 
@@ -226,13 +228,27 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
 
     @app.get("/api/box/campaigns/{campaign_id}")
     def plan_detail(campaign_id: str) -> dict[str, Any]:
-        case = box_db.load_plan_case(store(), campaign_id)
-        if case is None:
-            raise HTTPException(status_code=404, detail=f"no campaign plan for {campaign_id}")
+        # One batched read rather than seven sequential ones. This endpoint is
+        # the campaign page's first call, and against a hosted database in
+        # another region the round trips were the whole of its load time.
+        wanted = [
+            box_db.KIND_PLAN_CASE,
+            box_db.KIND_PACK,
+            box_db.KIND_CHECKLIST,
+            box_db.KIND_OUTLINES,
+            box_db.KIND_WORKFLOW_PLAN,
+            box_db.KIND_MANIFEST,
+            box_db.KIND_COMPLETENESS_REPORT,
+        ]
+        records = latest_many(store(), [(kind, campaign_id) for kind in wanted])
 
         def latest(kind: str) -> dict[str, Any] | None:
-            record = store().get(kind, campaign_id)
+            record = records.get((kind, campaign_id))
             return dict(record.value) if record else None
+
+        case = latest(box_db.KIND_PLAN_CASE)
+        if case is None:
+            raise HTTPException(status_code=404, detail=f"no campaign plan for {campaign_id}")
 
         assets = [a.model_dump() for a in box_db.load_registered_assets(store(), campaign_id)]
         return {
@@ -245,7 +261,9 @@ def register_box_routes(app: FastAPI, bridge: Any) -> None:
             "manifest": latest(box_db.KIND_MANIFEST),
             "completeness_report": latest(box_db.KIND_COMPLETENESS_REPORT),
             "registered_assets": assets,
-            "model": BOX_MODEL_ID,
+            # What actually answered, not the id the spec routes to.
+            "model": effective_model(bridge().agent.deps.provider, BOX_MODEL_ID),
+            "target_model": BOX_MODEL_ID,
         }
 
     @app.get("/api/box/documents")

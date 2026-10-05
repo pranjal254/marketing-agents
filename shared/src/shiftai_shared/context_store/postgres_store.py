@@ -127,6 +127,41 @@ class PostgresContextStore(_PgBase):
         )
         return [StoredRecord(kind, key, int(v), dict(val), str(c)) for v, val, c in rows]
 
+    def get_many(
+        self, kind_keys: list[tuple[str, str]]
+    ) -> dict[tuple[str, str], StoredRecord]:
+        """Several records' latest versions in ONE statement.
+
+        A screen that needs seven records sharing a key would otherwise pay
+        seven round trips to a hosted database, each also waiting on this
+        binding's connection lock. Against a database in another region that
+        is the difference between a visible pause and an instant load.
+
+        DISTINCT ON picks the highest version per (kind, key) in a single
+        index-ordered pass, so the cost is one trip regardless of how many
+        records are asked for.
+        """
+        if not kind_keys:
+            return {}
+        pairs = list(dict.fromkeys(kind_keys))  # de-duplicate, keep order
+        placeholders = ", ".join(["(%s, %s)"] * len(pairs))
+        params: list[Any] = [self._tenant]
+        for kind, key in pairs:
+            params.extend((kind, key))
+        rows = self._execute(
+            "SELECT DISTINCT ON (kind, key) kind, key, version, value, created_at"
+            " FROM context_records"
+            f" WHERE tenant_id = %s AND (kind, key) IN ({placeholders})"
+            " ORDER BY kind, key, version DESC",
+            tuple(params),
+        )
+        return {
+            (str(kind), str(key)): StoredRecord(
+                str(kind), str(key), int(version), dict(value), str(created)
+            )
+            for kind, key, version, value, created in rows
+        }
+
     def query(self, kind: str) -> list[StoredRecord]:
         rows = self._execute(
             "SELECT r.key, r.version, r.value, r.created_at FROM context_records r"

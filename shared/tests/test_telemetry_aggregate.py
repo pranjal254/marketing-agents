@@ -176,3 +176,30 @@ def test_errors_counted_from_event_type_or_error_attribute() -> None:
         ]
     )
     assert snapshot["totals"]["errors"] == 2
+
+
+def test_run_totals_are_not_added_on_top_of_the_spans_they_restate() -> None:
+    """STS reports a run's spend twice: per span, then again as a run total.
+    Summing both reports roughly double the real figure."""
+    spans = [
+        _record(1, cost=0.10, model="claude-opus-5", **{"shiftai.cost.scope": "span_incremental"}),
+        _record(2, cost=0.20, model="claude-opus-5", **{"shiftai.cost.scope": "span_incremental"}),
+    ]
+    summary = _record(
+        3, event="run_summary", cost=0.30,
+        **{"shiftai.cost.scope": "run_total", "shiftai.outcome": "success"},
+    )
+    snapshot = aggregate_records([*spans, summary])
+
+    assert snapshot["totals"]["cost_usd"] == 0.3  # not 0.6
+    assert snapshot["totals"]["records"] == 3  # the summary still counts as a record
+    # And the restatement must not inflate any breakdown either.
+    outcome = next(r for r in snapshot["by_outcome"] if r["outcome"] == "success")
+    assert outcome["cost_usd"] == 0.0
+    assert outcome["records"] == 1
+
+
+def test_cost_with_no_scope_is_still_counted() -> None:
+    """Only an explicit run_total is skipped; an unscoped cost is real spend."""
+    snapshot = aggregate_records([_record(1, cost=0.25)])
+    assert snapshot["totals"]["cost_usd"] == 0.25

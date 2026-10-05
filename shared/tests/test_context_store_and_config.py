@@ -75,3 +75,80 @@ def test_store_query_latest_per_key(tmp_path: Path) -> None:
     store.put("calendar", "c1", {"topic": "t1-updated"})
     latest = {r.key: r.value["topic"] for r in store.query("calendar")}
     assert latest == {"c1": "t1-updated", "c2": "t2"}
+
+
+# --- batched reads ----------------------------------------------------------
+# latest_many exists because a screen reads several records of one campaign at
+# once, and one round trip per record is seconds of blank page against a hosted
+# database. The fallback path must behave identically to the optimised one.
+
+
+def test_latest_many_returns_the_newest_version_of_each_record() -> None:
+    from shiftai_shared.context_store.local_store import InMemoryContextStore
+    from shiftai_shared.context_store.store import latest_many
+
+    store = InMemoryContextStore()
+    store.put("pack", "cmp_1", {"v": 1})
+    store.put("pack", "cmp_1", {"v": 2})
+    store.put("checklist", "cmp_1", {"items": []})
+    store.put("pack", "cmp_2", {"v": 1})
+
+    found = latest_many(store, [("pack", "cmp_1"), ("checklist", "cmp_1")])
+    assert found[("pack", "cmp_1")].value == {"v": 2}
+    assert found[("pack", "cmp_1")].version == 2
+    assert ("checklist", "cmp_1") in found
+    # Another campaign's record is not swept in by sharing a kind.
+    assert ("pack", "cmp_2") not in found
+
+
+def test_latest_many_omits_what_was_never_written() -> None:
+    """Absent rather than None, so a caller needs no second check."""
+    from shiftai_shared.context_store.local_store import InMemoryContextStore
+    from shiftai_shared.context_store.store import latest_many
+
+    store = InMemoryContextStore()
+    store.put("pack", "cmp_1", {"v": 1})
+    found = latest_many(store, [("pack", "cmp_1"), ("manifest", "cmp_1")])
+    assert set(found) == {("pack", "cmp_1")}
+
+
+def test_latest_many_handles_an_empty_request() -> None:
+    from shiftai_shared.context_store.local_store import InMemoryContextStore
+    from shiftai_shared.context_store.store import latest_many
+
+    assert latest_many(InMemoryContextStore(), []) == {}
+
+
+def test_latest_many_uses_a_backend_batch_when_one_exists() -> None:
+    """The whole point is one round trip; prove the fast path is taken and
+    that it agrees with the loop it replaces."""
+    from shiftai_shared.context_store.local_store import InMemoryContextStore
+    from shiftai_shared.context_store.store import latest_many
+
+    class Batched(InMemoryContextStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self.batch_calls = 0
+            self.get_calls = 0
+
+        def get(self, kind: str, key: str):  # type: ignore[no-untyped-def]
+            self.get_calls += 1
+            return super().get(kind, key)
+
+        def get_many(self, kind_keys):  # type: ignore[no-untyped-def]
+            self.batch_calls += 1
+            out = {}
+            for kind, key in kind_keys:
+                record = super().get(kind, key)
+                if record is not None:
+                    out[(kind, key)] = record
+            return out
+
+    store = Batched()
+    store.put("pack", "cmp_1", {"v": 1})
+    store.put("checklist", "cmp_1", {"v": 1})
+    found = latest_many(store, [("pack", "cmp_1"), ("checklist", "cmp_1")])
+
+    assert store.batch_calls == 1
+    assert store.get_calls == 0  # the per-record loop was skipped entirely
+    assert set(found) == {("pack", "cmp_1"), ("checklist", "cmp_1")}

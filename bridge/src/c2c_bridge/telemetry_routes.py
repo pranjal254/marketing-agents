@@ -154,14 +154,23 @@ def register_telemetry_routes(app: FastAPI, bridge: Any) -> None:
         return envelope(snapshot, banked=True)
 
     @app.post("/api/telemetry/export/refresh")
-    def refresh(force: bool = False) -> dict[str, Any]:
-        """Aggregate everything after the last cursor and bank the result."""
+    def refresh(force: bool = False, rebuild: bool = False) -> dict[str, Any]:
+        """Aggregate everything after the last cursor and bank the result.
+
+        ``rebuild`` discards the banked figures and recomputes from the raw
+        stream alone. It exists because the store is append-only: a snapshot
+        computed by a version with a counting bug cannot be deleted, only
+        superseded. Note what it can and cannot do. The raw stream is a
+        per-session file, so a rebuild sees only the records still on disk, and
+        the result will usually be SMALLER than what it replaces rather than
+        merely corrected. Earlier snapshots remain readable in the history.
+        """
         previous = load_snapshot()
         interval = refresh_interval_hours()
         generated = _parse_iso((previous or {}).get("generated_at"))
         now = datetime.now(tz=UTC)
 
-        if previous is not None and generated is not None and not force:
+        if previous is not None and generated is not None and not force and not rebuild:
             due_at = generated + timedelta(hours=interval)
             if now < due_at:
                 return envelope(
@@ -175,7 +184,7 @@ def register_telemetry_routes(app: FastAPI, bridge: Any) -> None:
                     records_added=0,
                 )
 
-        base = previous if previous is not None else empty_snapshot()
+        base = empty_snapshot() if rebuild else (previous or empty_snapshot())
         cursor = base.get("cursor")
         stream = read_stream(bridge().workdir / TELEMETRY_FILENAME)
         fresh = [record for record in stream if record_is_after(record, cursor)]
@@ -186,6 +195,7 @@ def register_telemetry_routes(app: FastAPI, bridge: Any) -> None:
             merged,
             banked=True,
             refreshed=True,
+            rebuilt=rebuild,
             records_added=len(fresh),
             records_in_stream=len(stream),
         )

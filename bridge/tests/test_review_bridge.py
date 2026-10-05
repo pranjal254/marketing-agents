@@ -119,7 +119,10 @@ def _campaign_with_flagship(client: TestClient) -> str:
 def test_meta_exposes_collaboration_agent(client: TestClient) -> None:
     meta = client.get("/api/meta").json()
     assert meta["collaboration"]["agent_id"] == "collaboration_iteration"
-    assert meta["collaboration"]["model"] == "claude-sonnet-5"
+    # "model" is what actually answered (the mock here, an Azure deployment in
+    # dev); "target_model" is the id the spec routes to.
+    assert meta["collaboration"]["model"] == "mock-model"
+    assert meta["collaboration"]["target_model"] == "claude-sonnet-5"
     assert meta["collaboration"]["reviewer_map"]["flagship"]
 
 

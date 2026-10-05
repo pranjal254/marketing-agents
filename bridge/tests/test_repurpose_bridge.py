@@ -103,7 +103,10 @@ def _campaign_in_production(client: TestClient) -> str:
 def test_meta_exposes_repurposing_agent(client: TestClient) -> None:
     meta = client.get("/api/meta").json()
     assert meta["repurposing"]["agent_id"] == "content_repurposing"
-    assert meta["repurposing"]["model"] == "claude-opus-5"
+    # "model" is what actually answered (the mock here, an Azure deployment in
+    # dev); "target_model" is the id the spec routes to.
+    assert meta["repurposing"]["model"] == "mock-model"
+    assert meta["repurposing"]["target_model"] == "claude-opus-5"
     assert any(r["asset_type"] == "faq_service_page" for r in meta["repurposing"]["recipes"])
 
 

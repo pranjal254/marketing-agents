@@ -164,3 +164,44 @@ def test_history_lists_each_banked_snapshot_newest_first(client: TestClient) -> 
     assert versions == sorted(versions, reverse=True)
     assert len(versions) >= 2
     assert history["snapshots"][0]["records"] == 2
+
+
+def test_rebuild_discards_the_banked_figures_and_recomputes(client: TestClient) -> None:
+    """The store is append-only, so a snapshot computed by a buggy version can
+    only be superseded, never deleted."""
+    _append(client, [_record(1), _record(2)])
+    first = client.post("/api/telemetry/export/refresh").json()
+    assert first["snapshot"]["totals"]["records"] == 2
+
+    _stream_path(client).write_text("", encoding="utf-8")
+    _append(client, [_record(5)])
+
+    rebuilt = client.post("/api/telemetry/export/refresh?rebuild=true").json()
+    assert rebuilt["rebuilt"] is True
+    # Smaller than what it replaced: a rebuild sees only what is still on disk.
+    assert rebuilt["snapshot"]["totals"]["records"] == 1
+    assert rebuilt["snapshot"]["refresh_count"] == 1
+
+    # And the superseded snapshot is still readable as history.
+    history = client.get("/api/telemetry/export/history").json()
+    assert [row["records"] for row in history["snapshots"]][:2] == [1, 2]
+
+
+def test_rebuild_ignores_the_rate_limit(client: TestClient) -> None:
+    _append(client, [_record(1)])
+    client.post("/api/telemetry/export/refresh")
+    again = client.post("/api/telemetry/export/refresh?rebuild=true").json()
+    assert again["refreshed"] is True
+
+
+def test_a_run_total_does_not_inflate_the_exported_cost(client: TestClient) -> None:
+    """End to end: the export must not report double the real spend."""
+    span = _record(1, cost=0.10)
+    span["shiftai.cost.scope"] = "span_incremental"
+    summary = _record(2, cost=0.10)
+    summary["shiftai.cost.scope"] = "run_total"
+    summary["shiftai.event.type"] = "run_summary"
+    _append(client, [span, summary])
+
+    body = client.post("/api/telemetry/export/refresh").json()
+    assert body["snapshot"]["totals"]["cost_usd"] == pytest.approx(0.10)

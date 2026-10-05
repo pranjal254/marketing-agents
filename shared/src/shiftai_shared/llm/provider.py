@@ -7,7 +7,7 @@ Production: Anthropic (Claude). Dev/test: Azure OpenAI or the in-process mock.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +27,22 @@ class LLMResponse(BaseModel):
     output_tokens: int = Field(ge=0)
     cache_read_input_tokens: int = Field(default=0, ge=0)
     finish_reason: str | None = None
+
+
+def effective_model(provider: Any, requested: str) -> str:
+    """The model that will actually answer a call for ``requested``.
+
+    A provider may substitute: the Azure binding ignores the Claude id the spec
+    routes to and serves the request from its configured deployment. Telemetry
+    already records both, but anything shown to a person should name the model
+    that really ran, or the screen quietly misreports what the deployment is
+    doing.
+
+    Duck-typed rather than part of the Protocol, so a provider that never
+    substitutes needs no code and test doubles keep working untouched.
+    """
+    resolve = getattr(provider, "effective_model_name", None)
+    return str(resolve(requested)) if callable(resolve) else requested
 
 
 class LLMProvider(Protocol):
@@ -59,6 +75,9 @@ class MockLLMProvider:
         self.script = list(script)
         self.model_name = model_name
         self.calls: list[dict[str, object]] = []
+
+    def effective_model_name(self, requested: str) -> str:
+        return self.model_name
 
     def complete(
         self,

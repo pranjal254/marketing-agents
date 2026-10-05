@@ -29,6 +29,7 @@ from c2c_content_repurposing.orchestration import (
 )
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from shiftai_shared.llm import effective_model
 
 
 class FlagshipIn(BaseModel):
@@ -266,7 +267,9 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
             "drafts": draft_records,
             "inventory": inventory,
             "gap_notes": [g.model_dump() for g in rp_db.load_gap_notes(store(), campaign_id)],
-            "model": REPURPOSE_MODEL_ID,
+            # What actually answered, not the id the spec routes to.
+            "model": effective_model(bridge().agent.deps.provider, REPURPOSE_MODEL_ID),
+            "target_model": REPURPOSE_MODEL_ID,
         }
 
 

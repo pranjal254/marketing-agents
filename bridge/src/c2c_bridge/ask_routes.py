@@ -39,7 +39,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from shiftai_shared.llm import SystemBlock
+from shiftai_shared.llm import SystemBlock, effective_model
 from shiftai_shared.process import PROCESS_PACK
 from shiftai_shared.telemetry import RunContext
 from shiftai_shared.telemetry.envelope import new_id, response_cost
@@ -184,7 +184,8 @@ def register_ask_routes(app: FastAPI, bridge: Any) -> None:
         return {
             "agent_id": ASSISTANT_AGENT_ID,
             "version": ASSISTANT_VERSION,
-            "model": MODEL_ID,
+            "model": effective_model(bridge().agent.deps.provider, MODEL_ID),
+            "target_model": MODEL_ID,
             "beta": True,
             "capabilities": {
                 "question_answering": True,

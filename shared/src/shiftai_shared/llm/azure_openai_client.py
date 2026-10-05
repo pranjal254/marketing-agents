@@ -35,6 +35,10 @@ class AzureOpenAIClient:
         self._deployment = deployment
         self._retries = retries
 
+    def effective_model_name(self, requested: str) -> str:
+        """The deployment, not the requested id: this binding substitutes."""
+        return self._deployment
+
     def complete(
         self,
         *,

@@ -14,6 +14,11 @@ banked, rather than silently reporting a smaller total than last time.
 
 *Cursored.* A snapshot records the last record it consumed. The next refresh
 starts after that cursor, so repeated refreshes never double-count a record.
+
+Cost needs one more rule. STS reports spend twice by design: once per span as
+``span_incremental`` and once per run as ``run_total``, the latter restating
+what its spans already reported. Only the incremental figures are summed here,
+so a dashboard does not show roughly double the real spend.
 """
 
 from __future__ import annotations
@@ -40,6 +45,7 @@ A_SCHEMA_VERSION = "shiftai.schema.version"
 A_ENVIRONMENT = "deployment.environment.name"
 A_TENANT = "shiftai.tenant.id"
 A_COST = "shiftai.cost.amount"
+A_COST_SCOPE = "shiftai.cost.scope"
 A_DURATION = "shiftai.span.duration_ms"
 A_OUTCOME = "shiftai.outcome"
 A_ESCALATION_REASON = "shiftai.escalation.reason"
@@ -52,6 +58,11 @@ A_RESPONSE_MODEL = "gen_ai.response.model"
 A_INPUT_TOKENS = "gen_ai.usage.input_tokens"
 A_OUTPUT_TOKENS = "gen_ai.usage.output_tokens"
 A_CACHE_READ_TOKENS = "gen_ai.usage.cache_read.input_tokens"
+
+# A run summary restates the spend its spans already reported. Summing both
+# reports roughly double the real figure, which on a cost dashboard is the
+# worst kind of wrong: confident and plausible.
+SCOPE_RUN_TOTAL = "run_total"
 
 EVENT_ESCALATED = "case_escalated"
 EVENT_HUMAN_GATE = "human_gate"
@@ -95,7 +106,9 @@ def _accumulate(bucket: dict[str, float], record: Mapping[str, Any]) -> None:
     bucket["input_tokens"] += _as_number(record.get(A_INPUT_TOKENS))
     bucket["output_tokens"] += _as_number(record.get(A_OUTPUT_TOKENS))
     bucket["cache_read_tokens"] += _as_number(record.get(A_CACHE_READ_TOKENS))
-    bucket["cost_usd"] += _as_number(record.get(A_COST))
+    # Incremental costs only; a run_total is a restatement, not new spend.
+    if record.get(A_COST_SCOPE) != SCOPE_RUN_TOTAL:
+        bucket["cost_usd"] += _as_number(record.get(A_COST))
     duration = record.get(A_DURATION)
     if isinstance(duration, int | float) and not isinstance(duration, bool):
         bucket["duration_ms_sum"] += float(duration)

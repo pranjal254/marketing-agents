@@ -53,7 +53,7 @@ from shiftai_shared.context_store import (
     store_backend,
 )
 from shiftai_shared.control_plane import KillSwitch, RateBreaker
-from shiftai_shared.llm import build_provider
+from shiftai_shared.llm import build_provider, effective_model
 from shiftai_shared.telemetry import JsonlSink
 from shiftai_shared.users import build_user_directory
 
@@ -417,6 +417,14 @@ def create_app(
                 return JSONResponse({"detail": "unauthorized"}, status_code=401)
             return await call_next(request)  # type: ignore[no-any-return]
 
+    def running_model(target: str) -> str:
+        """What a person should be shown. The spec routes each agent to a
+        Claude id, but a deployment may substitute: dev serves everything from
+        an Azure deployment. Showing the target would misreport what is
+        actually answering, so screens get the real one and `target_model`
+        keeps the intent visible beside it."""
+        return effective_model(bridge().agent.deps.provider, target)
+
     # ------------------------------------------------------------------ meta
     @app.get("/api/health")
     def health() -> dict[str, Any]:
@@ -425,7 +433,8 @@ def create_app(
             "agent_id": bridge().agent.deps.config.agent_id,
             "config_version": bridge().agent.deps.config.version,
             "provider": bridge().settings.llm_provider,
-            "model": MODEL_ID,
+            "model": running_model(MODEL_ID),
+            "target_model": MODEL_ID,
             "store": bridge().store_backend,
             "brand_pack": bridge().brand_pack,
             "marketing_root": (
@@ -452,7 +461,8 @@ def create_app(
             "intake_schema": [f.model_dump() for f in config.intake_schema],
             "reason_codes": config.reason_codes,
             "provider": bridge().settings.llm_provider,
-            "model": MODEL_ID,
+            "model": running_model(MODEL_ID),
+            "target_model": MODEL_ID,
             "brand_pack": bridge().brand_pack,
             "marketing_root": (
                 str(bridge().binding_paths.marketing_root)
@@ -463,7 +473,8 @@ def create_app(
                 "agent_id": bridge().box.deps.config.agent_id,
                 "agent_name": "Campaign-in-a-Box Orchestrator",
                 "config_version": bridge().box.deps.config.version,
-                "model": BOX_MODEL_ID,
+                "model": running_model(BOX_MODEL_ID),
+                "target_model": BOX_MODEL_ID,
                 "composition": [
                     c.model_dump() for c in bridge().box.deps.config.composition
                 ],
@@ -479,7 +490,8 @@ def create_app(
                 "agent_id": bridge().repurposer.deps.config.agent_id,
                 "agent_name": "Content Repurposing Agent",
                 "config_version": bridge().repurposer.deps.config.version,
-                "model": REPURPOSE_MODEL_ID,
+                "model": running_model(REPURPOSE_MODEL_ID),
+                "target_model": REPURPOSE_MODEL_ID,
                 "recipe_status": bridge().repurposer.deps.config.recipe_status,
                 "recipes": [
                     r.model_dump() for r in bridge().repurposer.deps.config.recipes
@@ -490,7 +502,8 @@ def create_app(
                 "agent_id": bridge().collab.deps.config.agent_id,
                 "agent_name": "Content Collaboration & Iteration Agent",
                 "config_version": bridge().collab.deps.config.version,
-                "model": COLLAB_MODEL_ID,
+                "model": running_model(COLLAB_MODEL_ID),
+                "target_model": COLLAB_MODEL_ID,
                 "reviewer_map_status": bridge().collab.deps.config.reviewer_map_status,
                 "reviewer_map": {
                     gate: [s.model_dump() for s in slots]
@@ -502,7 +515,8 @@ def create_app(
                 "agent_id": bridge().gate.deps.config.agent_id,
                 "agent_name": "Quality Gate & Approval Agent",
                 "config_version": bridge().gate.deps.config.version,
-                "model": GATE_MODEL_ID,
+                "model": running_model(GATE_MODEL_ID),
+                "target_model": GATE_MODEL_ID,
                 "policy_status": bridge().gate.deps.config.policy_status,
                 "distribution_classes": bridge().gate.deps.config.distribution_classes,
                 "review_sequences": {

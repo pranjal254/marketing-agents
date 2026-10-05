@@ -127,7 +127,10 @@ def test_meta_exposes_quality_gate(client: TestClient) -> None:
     meta = client.get("/api/meta").json()
     gate = meta["quality_gate"]
     assert gate["agent_id"] == "quality_gate_approval"
-    assert gate["model"] == "claude-sonnet-5"
+    # "model" is what actually answered (the mock here, an Azure deployment in
+    # dev); "target_model" is the id the spec routes to.
+    assert gate["model"] == "mock-model"
+    assert gate["target_model"] == "claude-sonnet-5"
     assert gate["distribution_classes"]["battle_card"] == "internal"
     assert gate["package_signoff"]["role"] == "bu-campaign-lead"
 
