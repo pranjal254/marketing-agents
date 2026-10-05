@@ -146,22 +146,44 @@ def _round_metrics(metrics: Mapping[str, Any]) -> dict[str, Any]:
 
 
 class _Grouping:
-    """One keyed breakdown (by stage, by agent and so on) plus its labels."""
+    """One keyed breakdown (by stage, by agent and so on) plus its labels.
 
-    def __init__(self) -> None:
+    Labels come in two kinds, and confusing them reports falsehoods.
+
+    A SINGLE label is genuinely one-to-one with the key: a stage id has one
+    label, an agent id has one type. First value seen wins and that is correct.
+
+    A MULTI label is many-to-one: several reviewer roles approve things, and a
+    substituting provider serves requests that asked for different models.
+    Taking the first of those and presenting it as the value is a lie that
+    reads as fact, so they accumulate into a sorted list instead.
+    """
+
+    def __init__(self, multi: tuple[str, ...] = ()) -> None:
         self.buckets: dict[str, dict[str, float]] = {}
         self.labels: dict[str, dict[str, Any]] = {}
+        self.multi: dict[str, dict[str, set[str]]] = {}
+        self._multi_names = set(multi)
+
+    def _label(self, key: str, name: str, value: Any) -> None:
+        if value is None:
+            return
+        if name in self._multi_names:
+            values = self.multi.setdefault(key, {}).setdefault(name, set())
+            values.update(value if isinstance(value, list) else [value])
+            return
+        known = self.labels.setdefault(key, {})
+        if name not in known:
+            known[name] = value
 
     def add(self, key: Any, record: Mapping[str, Any], **labels: Any) -> None:
         if key is None:
             return
         name = str(key)
-        bucket = self.buckets.setdefault(name, _zero_metrics())
-        _accumulate(bucket, record)
-        known = self.labels.setdefault(name, {})
+        _accumulate(self.buckets.setdefault(name, _zero_metrics()), record)
+        self.labels.setdefault(name, {})
         for label, value in labels.items():
-            if value is not None and label not in known:
-                known[label] = value
+            self._label(name, label, value)
 
     def load(self, rows: Iterable[Mapping[str, Any]], key_name: str) -> None:
         """Re-absorb an already-dumped grouping so snapshots can be merged."""
@@ -171,20 +193,21 @@ class _Grouping:
                 continue
             name = str(key)
             _merge_metrics(self.buckets.setdefault(name, _zero_metrics()), row)
-            known = self.labels.setdefault(name, {})
+            self.labels.setdefault(name, {})
             for label, value in row.items():
                 if label == key_name or label in _METRIC_KEYS:
                     continue
                 if label.startswith("duration_ms"):
                     continue
-                if value is not None and label not in known:
-                    known[label] = value
+                self._label(name, label, value)
 
     def dump(self, key_name: str, sort_key: str | None = None) -> list[dict[str, Any]]:
-        rows = [
-            {key_name: key, **self.labels.get(key, {}), **_round_metrics(metrics)}
-            for key, metrics in self.buckets.items()
-        ]
+        rows = []
+        for key, metrics in self.buckets.items():
+            multi = {n: sorted(v) for n, v in self.multi.get(key, {}).items() if v}
+            rows.append(
+                {key_name: key, **self.labels.get(key, {}), **multi, **_round_metrics(metrics)}
+            )
         if sort_key:
             rows.sort(key=lambda r: (r.get(sort_key) is None, r.get(sort_key) or 0, r[key_name]))
         else:
@@ -192,14 +215,17 @@ class _Grouping:
         return rows
 
 
-_GROUPINGS: tuple[tuple[str, str, str | None], ...] = (
-    ("by_stage", "stage_id", "stage_ordinal"),
-    ("by_agent", "agent_id", None),
-    ("by_event_type", "event_type", None),
-    ("by_model", "model", None),
-    ("by_outcome", "outcome", None),
-    ("by_escalation_reason", "reason", None),
-    ("by_human_gate_decision", "decision", None),
+# (payload key, row key, sort key, many-to-one label names)
+_GROUPINGS: tuple[tuple[str, str, str | None, tuple[str, ...]], ...] = (
+    ("by_stage", "stage_id", "stage_ordinal", ()),
+    ("by_agent", "agent_id", None, ()),
+    ("by_event_type", "event_type", None, ()),
+    ("by_model", "model", None, ("requested_as",)),
+    ("by_outcome", "outcome", None, ()),
+    # routed_to is one-to-one: the routing map resolves a reason to one queue.
+    ("by_escalation_reason", "reason", None, ()),
+    ("by_human_gate_decision", "decision", None, ("actor_role",)),
+    ("by_human_gate_role", "actor_role", None, ("decision",)),
 )
 
 
@@ -215,7 +241,7 @@ def empty_snapshot() -> dict[str, Any]:
         "source": {},
         "totals": _round_metrics(_zero_metrics()) | {"cases": 0, "traces": 0},
         "identity": {"case_ids": [], "trace_ids": []},
-        **{name: [] for name, _, _ in _GROUPINGS},
+        **{name: [] for name, _, _, _ in _GROUPINGS},
     }
 
 
@@ -231,7 +257,7 @@ def aggregate_records(
     """
     labels = stage_labels or {}
     totals = _zero_metrics()
-    groups = {name: _Grouping() for name, _, _ in _GROUPINGS}
+    groups = {name: _Grouping(multi) for name, _, _, multi in _GROUPINGS}
     case_ids: set[str] = set()
     trace_ids: set[str] = set()
     source: dict[str, Any] = {}
@@ -268,6 +294,11 @@ def aggregate_records(
         )
         groups["by_human_gate_decision"].add(
             record.get(A_HITL_DECISION), record, actor_role=record.get(A_HITL_ROLE)
+        )
+        # Keyed the other way round: a decision has many roles behind it, so
+        # "who approves what, and how often" needs its own breakdown.
+        groups["by_human_gate_role"].add(
+            record.get(A_HITL_ROLE), record, decision=record.get(A_HITL_DECISION)
         )
 
         if record.get(A_CASE_ID):
@@ -307,7 +338,7 @@ def aggregate_records(
         "identity": {"case_ids": sorted(case_ids), "trace_ids": sorted(trace_ids)},
         **{
             name: groups[name].dump(key_name, sort_key)
-            for name, key_name, sort_key in _GROUPINGS
+            for name, key_name, sort_key, _ in _GROUPINGS
         },
     }
 
@@ -352,8 +383,8 @@ def merge_snapshots(previous: Mapping[str, Any], delta: Mapping[str, Any]) -> di
         delta_identity.get("trace_ids", [])
     )
 
-    for name, key_name, sort_key in _GROUPINGS:
-        grouping = _Grouping()
+    for name, key_name, sort_key, multi in _GROUPINGS:
+        grouping = _Grouping(multi)
         grouping.load(previous.get(name, []), key_name)
         grouping.load(delta.get(name, []), key_name)
         merged[name] = grouping.dump(key_name, sort_key)

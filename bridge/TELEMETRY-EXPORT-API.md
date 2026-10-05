@@ -113,10 +113,11 @@ appears in your dashboard without a code change on your side. **Order charts by
   "by_stage":                [ { "stage_id", "stage_label", "stage_ordinal", ...metrics } ],
   "by_agent":                [ { "agent_id", "agent_type", ...metrics } ],
   "by_event_type":           [ { "event_type", ...metrics } ],
-  "by_model":                [ { "model", "requested_as", ...metrics } ],
+  "by_model":                [ { "model", "requested_as": [...], ...metrics } ],
   "by_outcome":              [ { "outcome", ...metrics } ],
   "by_escalation_reason":    [ { "reason", "routed_to", ...metrics } ],
-  "by_human_gate_decision":  [ { "decision", "actor_role", ...metrics } ]
+  "by_human_gate_decision":  [ { "decision", "actor_role": [...], ...metrics } ],
+  "by_human_gate_role":      [ { "actor_role", "decision": [...], ...metrics } ]
 }
 ```
 
@@ -195,6 +196,18 @@ worth surfacing beside it because the gap is real information about what the
 deployment is doing. The studio itself now does the same, so the two agree.
 
 ## 5. Things to know before you build
+
+**Some labels are lists, on purpose.** A label that is genuinely one-to-one
+with its row key is a string: `stage_label`, `agent_type`, `routed_to`. A label
+that is many-to-one is a sorted list, because reporting the first value seen
+would read as fact and be false. Two are lists today: `requested_as` on
+`by_model`, since one deployment serves requests that asked for different
+models, and `actor_role` on `by_human_gate_decision`, since several roles
+approve things.
+
+For "who works the gates and how often", use **`by_human_gate_role`**, keyed
+the other way round. On a real campaign the content reviewer worked 10 gates
+and the BU lead 2, which the decision-keyed view alone cannot show you.
 
 **`by_outcome` counts, it does not cost.** An outcome is recorded on a run
 summary, and run summaries restate spend rather than adding it, so every

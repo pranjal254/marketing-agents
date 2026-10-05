@@ -228,3 +228,63 @@ def test_a_batch_of_only_process_free_records_reports_no_process() -> None:
     snapshot = aggregate_records([assistant])
     assert snapshot["source"].get("process_name") is None
     assert snapshot["source"]["tenant_id"] == "levelshift"
+
+
+def test_a_many_to_one_label_accumulates_instead_of_reporting_the_first() -> None:
+    """A substituting provider serves requests that asked for different models.
+    Reporting only the first asked-for id reads as fact and is false."""
+    opus = _record(1, model="gpt-5-nano")
+    opus["gen_ai.request.model"] = "claude-opus-5"
+    sonnet = _record(2, model="gpt-5-nano")
+    sonnet["gen_ai.request.model"] = "claude-sonnet-5"
+
+    snapshot = aggregate_records([opus, sonnet])
+    row = next(r for r in snapshot["by_model"] if r["model"] == "gpt-5-nano")
+    assert row["requested_as"] == ["claude-opus-5", "claude-sonnet-5"]
+    assert row["llm_calls"] == 2
+
+
+def test_human_gates_are_broken_down_by_role_as_well_as_by_decision() -> None:
+    """Several roles work the gates. Keying only by decision hid who acted."""
+    def gate(seq, role):
+        r = _record(seq, event="human_gate")
+        r["shiftai.hitl.decision"] = "approved"
+        r["shiftai.hitl.actor.role"] = role
+        return r
+
+    snapshot = aggregate_records([
+        gate(1, "content-reviewer"), gate(2, "content-reviewer"),
+        gate(3, "grammar-quality-reviewer"), gate(4, "bu-campaign-lead"),
+    ])
+
+    by_role = {r["actor_role"]: r for r in snapshot["by_human_gate_role"]}
+    assert by_role["content-reviewer"]["human_gates"] == 2
+    assert by_role["grammar-quality-reviewer"]["human_gates"] == 1
+    assert by_role["bu-campaign-lead"]["human_gates"] == 1
+
+    # And the decision row now lists every role rather than claiming one.
+    approved = next(r for r in snapshot["by_human_gate_decision"]
+                    if r["decision"] == "approved")
+    assert approved["actor_role"] == [
+        "bu-campaign-lead", "content-reviewer", "grammar-quality-reviewer",
+    ]
+
+
+def test_accumulated_labels_survive_a_merge() -> None:
+    """Merging must union the lists, not keep whichever snapshot came first."""
+    def gate(seq, role):
+        r = _record(seq, event="human_gate")
+        r["shiftai.hitl.decision"] = "approved"
+        r["shiftai.hitl.actor.role"] = role
+        return r
+
+    first = aggregate_records([gate(1, "content-writer")])
+    second = aggregate_records([gate(2, "marketing-lead")])
+    merged = merge_snapshots(first, second)
+
+    approved = next(r for r in merged["by_human_gate_decision"]
+                    if r["decision"] == "approved")
+    assert approved["actor_role"] == ["content-writer", "marketing-lead"]
+    assert {r["actor_role"] for r in merged["by_human_gate_role"]} == {
+        "content-writer", "marketing-lead",
+    }
