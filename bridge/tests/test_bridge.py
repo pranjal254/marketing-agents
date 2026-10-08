@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,11 @@ CLASSIFY_OK = json.dumps(
     }
 )
 
+# The window is relative to today so the back-planned calendar stays feasible:
+# a fixed date rots as real time passes it (observed 2026-10-07).
+_WINDOW_START = (date.today() + timedelta(days=60)).isoformat()
+_WINDOW_END = (date.today() + timedelta(days=105)).isoformat()
+
 COMPLETE_REQUEST = {
     "requester": "priya@x.com",
     "objective": "Pipeline for ERP offer",
@@ -36,8 +42,8 @@ COMPLETE_REQUEST = {
     "target_segment": "type_3",
     "offer_topic": "ERP modernization assessment",
     "channels": "events,email",
-    "timeline_start": "2026-10-01",
-    "timeline_end": "2026-11-15",
+    "timeline_start": _WINDOW_START,
+    "timeline_end": _WINDOW_END,
     "owner": "priya@x.com",
     "budget_flag": "yes",
 }

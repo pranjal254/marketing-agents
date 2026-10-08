@@ -66,7 +66,7 @@ def test_defaults_come_from_the_plan_volume_and_the_config_range(
     linkedin = settings.for_asset("linkedin_posts")
     assert linkedin is not None
     assert linkedin.variants == 4
-    assert (linkedin.min_words, linkedin.max_words) == (60, 150)
+    assert (linkedin.min_words, linkedin.max_words) == (100, 150)
 
     flagship = settings.for_asset("flagship_blog")
     assert flagship is not None
@@ -154,7 +154,7 @@ def test_a_partial_update_leaves_every_other_asset_alone(
     assert saved.for_asset("linkedin_posts").variants == 2  # type: ignore[union-attr]
     untouched = saved.for_asset("call_scripts")
     assert untouched is not None
-    assert (untouched.variants, untouched.min_words) == (1, 150)
+    assert (untouched.variants, untouched.min_words) == (1, 250)
 
 
 def test_an_asset_not_on_the_plan_is_ignored_not_invented(
@@ -201,7 +201,7 @@ def test_without_saved_settings_the_jobs_fall_back_to_plan_and_config(
     checklist = _checklist(_item("linkedin_posts", 4))
     jobs, _ = build_fanout_jobs(checklist, shipped, None)
     assert jobs[0].volume == 4
-    assert (jobs[0].min_words, jobs[0].max_words) == (60, 150)
+    assert (jobs[0].min_words, jobs[0].max_words) == (100, 150)
 
 
 def test_an_asset_added_after_settings_were_saved_still_resolves(

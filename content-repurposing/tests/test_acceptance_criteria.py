@@ -46,12 +46,19 @@ def test_step_02_drafts_flagship_from_outline_in_brand_voice(
     assert outcome.draft.self_check.passed  # brand rules pass at generation time
 
 
-def test_step_03_embeds_inline_source_markers(agent: ContentRepurposingAgent) -> None:
+def test_step_03_embeds_source_markers_sentence_anchored(
+    agent: ContentRepurposingAgent,
+) -> None:
+    """Since the tagging pass split off from writing, markers anchor by verbatim
+    sentence (claim map + marker table) instead of inline [c-N] in the prose."""
     outcome = agent.draft_flagship(CAMPAIGN_ID)
     assert outcome.draft is not None
+    marker = outcome.draft.claim_markers[0]
+    assert marker.marker == "c-1"
+    assert marker.source_ref == "sig:1"
     text = " ".join(p for s in outcome.draft.sections for p in s.paragraphs)
-    assert "[c-1]" in text
-    assert outcome.draft.claim_markers[0].source_ref == "sig:1"
+    assert marker.sentence and marker.sentence in text  # verbatim anchor
+    assert "[c-1]" not in text  # reader-facing prose stays clean
     assert outcome.draft.claim_map_ref  # sidecar claim map staged with the doc
 
 

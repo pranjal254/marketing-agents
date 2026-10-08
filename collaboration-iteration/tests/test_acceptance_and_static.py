@@ -113,7 +113,7 @@ def test_no_destructive_file_operations() -> None:
 def test_verbatim_system_prompt_is_versioned_and_untouched() -> None:
     prompt = (
         Path(__file__).resolve().parents[1] / "prompts"
-        / "collaboration-iteration.system.v1.0.0.md"
+        / "collaboration-iteration.system.v1.1.0.md"
     ).read_text(encoding="utf-8")
     assert "You are the Content Collaboration & Iteration Agent" in prompt
     assert "Never adjudicate conflicting feedback" in prompt

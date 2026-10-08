@@ -15,16 +15,31 @@ from tests.test_box_bridge import PACK_JSON, REUSE_JSON
 from tests.test_bridge import CLASSIFY_OK, COMPLETE_REQUEST
 
 CLAIM = "The brief targets ERP modernization for manufacturers"
-FLAGSHIP_PARA = f"{CLAIM} [c-1], and LevelShift carries it through one accountable plan."
+FLAGSHIP_PARA = f"{CLAIM}, and LevelShift carries it through one accountable plan."
 
 FLAGSHIP_JSON = json.dumps(
     {
         "title": "ERP modernization without disruption",
+        "thesis": "Modernization succeeds when one accountable partner owns the outcome.",
+        "arc": "From fragmented plant systems to one accountable plan.",
+        "primary_cta": "Book a modernization assessment",
         "sections": [{"heading": "Problem", "paragraphs": [FLAGSHIP_PARA]}],
-        "claims_used": [
-            {"marker": "c-1", "claim": CLAIM, "source_ref": "brief:offer_topic"}
-        ],
         "gap_notes": [],
+        "confidence": 0.9,
+    }
+)
+
+CRITIQUE_JSON = json.dumps(
+    {"verdict": "pass", "scores": {}, "edit_directions": [], "confidence": 0.9}
+)
+
+TAGGING_JSON = json.dumps(
+    {
+        "claims_used": [
+            {"marker": "c-1", "sentence_quote": FLAGSHIP_PARA, "claim": CLAIM,
+             "source_ref": "brief:offer_topic"}
+        ],
+        "unsourced": [],
         "confidence": 0.9,
     }
 )
@@ -66,9 +81,11 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
                 (lambda u: "audience & offer pack" in u, PACK_JSON),
                 (lambda u: "reuse / adapt / create" in u, REUSE_JSON),
                 (lambda u: "Draft the flagship asset" in u, FLAGSHIP_JSON),
+                (lambda u: u.startswith("Review this flagship draft"), CRITIQUE_JSON),
+                (lambda u: u.startswith("Tag the claims"), TAGGING_JSON),
                 (lambda u: u.startswith("Extract the confirmed flagship's claim inventory"),
                  INVENTORY_JSON),
-                (lambda u: "derivative from the claim inventory" in u, DERIVATIVE_JSON),
+                (lambda u: "derivative of this campaign's flagship" in u, DERIVATIVE_JSON),
             ],
         )
 

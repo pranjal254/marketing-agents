@@ -7,6 +7,7 @@ overwrites — guardrail 3 is structural: no such method exists on the protocol.
 
 from __future__ import annotations
 
+import os
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -15,6 +16,23 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from c2c_campaign_box.agent_config import OrchestratorConfig
+
+
+def io_path(path: Path) -> Path:
+    """The form of a local path to use for filesystem OPERATIONS.
+
+    On Windows the ``\\\\?\\`` prefix lifts the 260-character MAX_PATH limit,
+    which the dev session path plus the campaign naming template can exceed
+    (observed live 2026-10-07: a 261-char ``.claims.json`` failed to write with
+    Errno 2 while its 254-char ``.docx`` succeeded). Refs and display strings
+    keep the plain form; only IO goes through this one. UNC shares are left
+    alone (they need a different prefix form and stay rare in dev)."""
+    if os.name != "nt":
+        return path
+    text = str(path if path.is_absolute() else path.absolute())
+    if text.startswith("\\\\"):
+        return path
+    return Path("\\\\?\\" + text)
 
 
 class WorkspaceWriteError(Exception):
@@ -55,32 +73,34 @@ class LocalCampaignWorkspace:
 
     def ensure_folder(self, path: str) -> str:
         target = self._root / path
-        target.mkdir(parents=True, exist_ok=True)
+        io_path(target).mkdir(parents=True, exist_ok=True)
         return str(target)
 
     def upload(self, folder_path: str, filename: str, content: bytes) -> str:
         folder = self._root / folder_path
-        target = folder / filename
+        target = folder / filename  # plain form: refs and error text stay readable
+        target_io = io_path(target)
         try:
-            folder.mkdir(parents=True, exist_ok=True)
-            if target.exists():
+            io_path(folder).mkdir(parents=True, exist_ok=True)
+            if target_io.exists():
                 raise WorkspaceWriteError(f"refusing to overwrite existing file: {target}")
-            target.write_bytes(content)
-        except OSError as exc:  # includes Windows MAX_PATH failures — typed, never raw
+            target_io.write_bytes(content)
+        except OSError as exc:  # anything the long-path form still cannot write
             raise WorkspaceWriteError(f"workspace write failed for {target}: {exc}") from exc
         return str(target)
 
     def download(self, ref: str) -> bytes:
-        return Path(ref).read_bytes()
+        return io_path(Path(ref)).read_bytes()
 
     def list_files(self, folder_path: str) -> list[WorkspaceFile]:
         folder = self._root / folder_path
-        if not folder.is_dir():
+        if not io_path(folder).is_dir():
             return []
         out: list[WorkspaceFile] = []
-        for p in sorted(folder.iterdir()):
+        for p in sorted(io_path(folder).iterdir()):
             if p.is_file():
-                out.append(WorkspaceFile(name=p.name, ref=str(p)))
+                # Refs keep the plain form; the \\?\ prefix never leaks out.
+                out.append(WorkspaceFile(name=p.name, ref=str(folder / p.name)))
         return out
 
 
@@ -138,14 +158,30 @@ def slugify(text: str, max_len: int = 24) -> str:
     return slug[:max_len].rstrip("-") or "campaign"
 
 
-def campaign_folder_name(config: OrchestratorConfig, topic: str, window_start: str) -> str:
-    """``{year}-Q{quarter}-{slug}`` from the versioned naming template."""
+def campaign_uid(campaign_id: str) -> str:
+    """A short per-campaign disambiguator for folder and file names. Two
+    campaigns created from the same topic in the same quarter would otherwise
+    share one workspace folder, and the additive upload rule then fails the
+    second campaign's drafts with 'refusing to overwrite' (observed live,
+    2026-10-07)."""
+    tail = re.sub(r"[^a-z0-9]", "", campaign_id.lower())[-6:]
+    return tail or "0"
+
+
+def campaign_folder_name(
+    config: OrchestratorConfig, topic: str, window_start: str, uid: str = ""
+) -> str:
+    """``{year}-Q{quarter}-{slug}`` from the versioned naming template, with an
+    optional per-campaign uid appended so same-topic campaigns never collide."""
     start = date.fromisoformat(window_start)
     quarter = (start.month - 1) // 3 + 1
+    slug = slugify(topic)
+    if uid:
+        slug = f"{slug}-{uid}"
     return (
         config.naming.campaign_folder.replace("{year}", str(start.year))
         .replace("{quarter}", str(quarter))
-        .replace("{slug}", slugify(topic))
+        .replace("{slug}", slug)
     )
 
 

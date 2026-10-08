@@ -70,32 +70,32 @@
         "max": 1400
       },
       "linkedin_posts": {
-        "min": 60,
+        "min": 100,
         "max": 150
       },
       "email_touchpoints": {
-        "min": 80,
-        "max": 180
+        "min": 150,
+        "max": 280
       },
       "battle_card": {
         "min": 150,
         "max": 350
       },
       "external_one_pager": {
-        "min": 250,
-        "max": 500
+        "min": 450,
+        "max": 700
       },
       "faq_service_page": {
-        "min": 200,
-        "max": 500
+        "min": 400,
+        "max": 600
       },
       "community_draft": {
         "min": 100,
         "max": 250
       },
       "call_scripts": {
-        "min": 150,
-        "max": 350
+        "min": 250,
+        "max": 450
       },
       "enablement_notes": {
         "min": 150,

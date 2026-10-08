@@ -35,13 +35,16 @@ TRACE_ID = "trace_agent2_test"
 
 CLAIM_TEXT = "Manufacturers report 42% faster onboarding after ERP modernization"
 FLAGSHIP_PARAGRAPH = (
-    f"{CLAIM_TEXT} [c-1], and LevelShift pairs that momentum with a single "
+    f"{CLAIM_TEXT}, and LevelShift pairs that momentum with a single "
     "accountable delivery partner."
 )
 
 FLAGSHIP_JSON = json.dumps(
     {
         "title": "ERP modernization without disruption",
+        "thesis": "ERP modernization succeeds when one accountable partner owns the outcome.",
+        "arc": "From fragmented plant systems to one accountable modernization plan.",
+        "primary_cta": "Book a modernization assessment",
         "sections": [
             {"heading": "The problem", "paragraphs": [FLAGSHIP_PARAGRAPH]},
             {
@@ -52,11 +55,55 @@ FLAGSHIP_JSON = json.dumps(
                 ],
             },
         ],
-        "claims_used": [{"marker": "c-1", "claim": CLAIM_TEXT, "source_ref": "sig:1"}],
         "gap_notes": [],
         "confidence": 0.9,
     }
 )
+
+CRITIQUE_JSON = json.dumps(
+    {
+        "verdict": "pass",
+        "scores": {"thesis": 5, "specificity": 4, "non_repetition": 5,
+                   "distinctiveness": 4, "register": 5, "shape": 4},
+        "edit_directions": [],
+        "confidence": 0.9,
+    }
+)
+
+TAGGING_JSON = json.dumps(
+    {
+        "claims_used": [
+            {
+                "marker": "c-1",
+                "sentence_quote": FLAGSHIP_PARAGRAPH,
+                "claim": CLAIM_TEXT,
+                "source_ref": "sig:1",
+            }
+        ],
+        "unsourced": [],
+        "confidence": 0.9,
+    }
+)
+
+
+def is_writer(u: str) -> bool:
+    return "Draft the flagship asset" in u
+
+
+def is_critique(u: str) -> bool:
+    return u.startswith("Review this flagship draft")
+
+
+def is_tagging(u: str) -> bool:
+    return u.startswith("Tag the claims")
+
+
+def is_inventory(u: str) -> bool:
+    return u.startswith("Extract the confirmed flagship's claim inventory")
+
+
+def is_derivative(u: str) -> bool:
+    return "derivative of this campaign's flagship" in u
 
 INVENTORY_JSON = json.dumps(
     {
@@ -256,10 +303,11 @@ def workspace(tmp_path: Path) -> LocalCampaignWorkspace:
 def provider() -> MockLLMProvider:
     return MockLLMProvider(
         script=[
-            (lambda u: "Draft the flagship asset" in u, FLAGSHIP_JSON),
-            (lambda u: u.startswith("Extract the confirmed flagship's claim inventory"),
-             INVENTORY_JSON),
-            (lambda u: "derivative from the claim inventory" in u, DERIVATIVE_JSON),
+            (is_writer, FLAGSHIP_JSON),
+            (is_critique, CRITIQUE_JSON),
+            (is_tagging, TAGGING_JSON),
+            (is_inventory, INVENTORY_JSON),
+            (is_derivative, DERIVATIVE_JSON),
         ],
         default="{}",
         model_name="mock-model",

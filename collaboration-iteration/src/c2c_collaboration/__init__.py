@@ -25,4 +25,4 @@ MAX_OUTPUT_TOKENS = 16_000  # spec
 RUN_TIMEOUT_S = 600.0  # 10 minutes per revision-application run (spec Timeout)
 RISK_TIER = "medium"
 DATA_CLASSIFICATION = "confidential"  # internal reviewer commentary — never quoted outside
-SYSTEM_PROMPT_VERSION = "1.0.0"
+SYSTEM_PROMPT_VERSION = "1.1.0"

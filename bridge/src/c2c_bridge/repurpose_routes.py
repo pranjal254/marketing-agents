@@ -267,6 +267,17 @@ def register_repurpose_routes(app: FastAPI, bridge: Any) -> None:
             "drafts": draft_records,
             "inventory": inventory,
             "gap_notes": [g.model_dump() for g in rp_db.load_gap_notes(store(), campaign_id)],
+            # Why the last run failed, in words a marketer can act on. The studio
+            # renders it next to the retry button instead of a bare "failed".
+            "last_error": (
+                {
+                    "error_type": case.get("error_type"),
+                    "detail": case.get("error_detail"),
+                    "hint": case.get("error_hint"),
+                }
+                if case and case.get("status") == "failed" and case.get("error_type")
+                else None
+            ),
             # What actually answered, not the id the spec routes to.
             "model": effective_model(bridge().agent.deps.provider, REPURPOSE_MODEL_ID),
             "target_model": REPURPOSE_MODEL_ID,

@@ -22,5 +22,5 @@ PLANNING_TIMEOUT_S = 1200.0  # 20 minutes per planning pass (spec Timeout)
 PACKAGING_TIMEOUT_S = 300.0  # 5 minutes per packaging run (spec Timeout)
 RISK_TIER = "medium"
 DATA_CLASSIFICATION = "confidential"
-SYSTEM_PROMPT_VERSION = "1.0.0"
+SYSTEM_PROMPT_VERSION = "1.1.0"
 PACK_TEMPLATE_VERSION = "0.1.0-draft"

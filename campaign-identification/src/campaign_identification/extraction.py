@@ -65,7 +65,7 @@ def _user_prompt(request: CampaignRequest, missing: list[str]) -> str:
         "- vertical and target_segment may be MULTIPLE values (arrays).\n"
         "- You MAY infer a field that is clearly implied by the text (for example "
         "the audience segment implied by budget scale or the seniority of the ask) "
-        "— then set basis to 'inferred' and quote the text that implies it.\n"
+        "then set basis to 'inferred' and quote the text that implies it.\n"
         "- NEVER fabricate: a field with no textual support is omitted, not guessed. "
         "Every entry carries the exact supporting quote from the description.\n"
         f"Fields to extract: {', '.join(missing)}.\n"

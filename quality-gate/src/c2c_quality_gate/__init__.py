@@ -33,4 +33,4 @@ ASSET_TIMEOUT_S = 300.0  # spec: 5 minutes per asset check
 PACKAGE_TIMEOUT_S = 1_800.0  # spec: 30 minutes per package
 RISK_TIER = "high"  # release gate for market-facing content
 DATA_CLASSIFICATION = "confidential"  # pre-release content + reviewer identities
-SYSTEM_PROMPT_VERSION = "1.0.0"
+SYSTEM_PROMPT_VERSION = "1.1.0"

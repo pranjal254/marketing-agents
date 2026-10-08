@@ -16,7 +16,7 @@ import stat
 from pathlib import Path
 
 from c2c_campaign_box.models import PackageManifest
-from c2c_campaign_box.workspace import CampaignWorkspace
+from c2c_campaign_box.workspace import CampaignWorkspace, io_path
 
 from c2c_quality_gate.models import LockRecord
 
@@ -30,7 +30,7 @@ def sha256_hex(content: bytes) -> str:
 
 
 def _set_read_only(ref: str) -> None:
-    path = Path(ref)
+    path = io_path(Path(ref))  # long-path-safe on Windows (MAX_PATH)
     if path.is_file():  # local binding only; OneDrive refs are item ids
         path.chmod(stat.S_IREAD)
 

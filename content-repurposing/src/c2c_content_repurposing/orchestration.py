@@ -1,10 +1,12 @@
 """The Content Repurposing case state machine.
 
 Flagship pass (spec steps 1-4): approved outline + pack loaded from the Context
-Store → unverifiable sections refused up front (gap notes) → L3 long-form draft
-with inline [c-N] markers → grounding strips anything citing outside the verified
-proof points → deterministic self-check (regenerate ≤ config limit, then withhold)
-→ versioned .docx + claim-map staged in the campaign workspace.
+Store → unverifiable sections refused up front (gap notes) → L3 WRITE (clean
+prose + thesis/arc/CTA, lint/length regeneration ≤ config limit) → one stylistic
+CRITIQUE against the pack rubric with at most one revision pass → claim TAGGING
+audited in code against the verified proof points (one bounded repair pass, then
+human) → final deterministic self-check → versioned .docx + claim-map staged in
+the campaign workspace.
 
 Human gate: ``confirm_flagship`` records the identity-stamped content-confirmed
 decision (production: the Content Collaboration Agent carries it; dev: the studio
@@ -28,6 +30,7 @@ STS mapping: deterministic policy escalations carry
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -47,6 +50,7 @@ from shiftai_shared.telemetry.envelope import RunContext, new_id, response_cost
 
 from c2c_content_repurposing import (
     AGENT_TYPE,
+    CRITIQUE_MAX_TOKENS,
     DATA_CLASSIFICATION,
     DERIVATIVE_MAX_TOKENS,
     DERIVATIVE_TIMEOUT_S,
@@ -56,6 +60,7 @@ from c2c_content_repurposing import (
     MODEL_ID,
     RISK_TIER,
     SYSTEM_PROMPT_VERSION,
+    TAGGING_MAX_TOKENS,
 )
 from c2c_content_repurposing import documents as docs
 from c2c_content_repurposing import generation as gen
@@ -66,7 +71,7 @@ from c2c_content_repurposing.fanout import DerivativeJob, build_fanout_jobs, run
 from c2c_content_repurposing.grounding import (
     deterministic_inventory,
     ground_derivative,
-    ground_flagship,
+    ground_tagging,
     numeric_tokens,
     verify_inventory_items,
 )
@@ -79,6 +84,7 @@ from c2c_content_repurposing.intake import (
 from c2c_content_repurposing.models import (
     ClaimInventory,
     ClaimMarker,
+    CritiqueLLMOutput,
     DerivativeLLMOutput,
     DraftSection,
     FanoutOutcome,
@@ -90,6 +96,8 @@ from c2c_content_repurposing.models import (
     ReworkOutcome,
     SelfCheckReport,
     StagedDraft,
+    TaggingLLMOutput,
+    UnsourcedClaim,
 )
 from c2c_content_repurposing.selfcheck import failure_feedback, run_self_check
 
@@ -217,17 +225,7 @@ class ContentRepurposingAgent:
                 escalation_reasons=["unsourced_claim"],
             )
 
-        payload = {
-            "approved_outline": {
-                "title": context.flagship_outline.title,
-                "sections": context.draftable_sections,
-            },
-            "audience_offer_pack": context.pack.model_dump(
-                include={"vertical", "personas", "value_proposition", "differentiators",
-                         "messaging_angles", "ctas", "channel_emphasis"}
-            ),
-            "verified_proof_points": [p.model_dump() for p in context.pack.proof_points],
-        }
+        payload = self._flagship_payload(context)
         blocks = gen.system_blocks(config, deps.brand_rules)
 
         draft_result = self._generate_flagship(ctx, campaign_id, context, blocks, payload)
@@ -254,7 +252,7 @@ class ContentRepurposingAgent:
                 status="escalated", gap_notes=gap_notes, escalation_reasons=["tool_failure"],
             )
 
-        title, sections, markers, draft_gaps, report = draft_result
+        title, sections, markers, draft_gaps, report, core = draft_result
         gap_notes.extend(draft_gaps)
         escalations: list[str] = []
 
@@ -290,7 +288,10 @@ class ContentRepurposingAgent:
         # the authority). Only a bodyless draft is withheld. A staged flagship with
         # zero verified markers still escalated above, so nothing sourced is lost.
         staged = bool(sections)
-        version = self._next_version(campaign_id, flagship_id)
+        version = self._next_version(
+            campaign_id, flagship_id,
+            folder=context.folder, slug=context.campaign_slug, asset_type=flagship_id,
+        )
         if staged and not report.passed:
             gap_notes = [
                 *gap_notes,
@@ -315,6 +316,9 @@ class ContentRepurposingAgent:
             filename=docs.draft_filename(context.campaign_slug, flagship_id, version),
             file_ref="",
             claim_map_ref="",
+            thesis=core["thesis"],
+            arc=core["arc"],
+            primary_cta=core["primary_cta"],
             sections=sections,
             claim_markers=markers,
             claim_lineage=[],
@@ -361,6 +365,25 @@ class ContentRepurposingAgent:
         )
         return chosen.min_words, chosen.max_words
 
+    def _flagship_payload(self, context: DraftingContext) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "approved_outline": {
+                "title": context.flagship_outline.title,
+                "sections": context.draftable_sections,
+            },
+            "audience_offer_pack": context.pack.model_dump(
+                include={"vertical", "personas", "value_proposition", "differentiators",
+                         "messaging_angles", "ctas", "channel_emphasis"}
+            ),
+            "verified_proof_points": [p.model_dump() for p in context.pack.proof_points],
+        }
+        exemplars = [
+            e.model_dump() for e in self.deps.brand_rules.exemplars.flagship if e.excerpt
+        ]
+        if exemplars:
+            payload["exemplar_excerpts"] = exemplars
+        return payload
+
     def _generate_flagship(
         self,
         ctx: RunContext,
@@ -369,21 +392,34 @@ class ContentRepurposingAgent:
         blocks: list[SystemBlock],
         payload: dict[str, Any],
         instruction: str | None = None,
-    ) -> tuple[str, list[DraftSection], list[ClaimMarker], list[GapNote], SelfCheckReport] | None:
-        """Generate → ground → self-check loop (regenerate ≤ max, then withhold).
-        Returns None only when the model output stayed unparsable."""
+    ) -> tuple[str, list[DraftSection], list[ClaimMarker], list[GapNote],
+               SelfCheckReport, dict[str, str]] | None:
+        """Write → critique → revise (once) → tag → repair (once) → final
+        self-check. Writing and claim tagging are separate calls on purpose:
+        clean prose first, then an audit of it; the writer never maintains a
+        claims ledger while writing. Returns None only when no write output
+        ever parsed."""
         config = self.deps.config
+        rules = self.deps.brand_rules
         min_words, max_words = self._flagship_word_range(campaign_id)
-        feedback: list[str] | None = None
-        last: tuple[str, list[DraftSection], list[ClaimMarker], list[GapNote],
-                    SelfCheckReport] | None = None
-        for attempt in range(1, config.max_regenerations + 2):
+
+        def write_call(
+            feedback: list[str] | None,
+            *,
+            attempt: int,
+            action: str,
+            edit_directions: list[dict[str, str]] | None = None,
+            repair_edits: list[dict[str, str]] | None = None,
+        ) -> FlagshipLLMOutput | None:
             with ctx.span("l3-flagship-draft", "llm") as span:
                 output, response, truncated = gen.run_json_call(
                     self.deps.provider, blocks,
                     gen.flagship_user_prompt(
                         payload, feedback, instruction,
                         min_words=min_words, max_words=max_words,
+                        brand_name=rules.brand_name,
+                        edit_directions=edit_directions,
+                        repair_edits=repair_edits,
                     ),
                     FlagshipLLMOutput,
                     max_tokens=FLAGSHIP_MAX_TOKENS,
@@ -393,7 +429,7 @@ class ContentRepurposingAgent:
             self._emit_l3(
                 ctx, span.span_id, span.duration_ms, response,
                 template_id=gen.FLAGSHIP_TEMPLATE_ID,
-                action="flagship_draft",
+                action=action,
                 confidence=output.confidence if output else 0.0,
                 extra={
                     "shiftai.generation.attempt": attempt,
@@ -403,24 +439,207 @@ class ContentRepurposingAgent:
                 },
             )
             self._check_budget(ctx, FLAGSHIP_TIMEOUT_S)
-            if output is None:
-                return last
-            sections, markers, gaps = ground_flagship(
-                output, context.verified_refs, campaign_id, config.flagship_asset_type
-            )
-            text = " ".join([output.title, *(p for s in sections for p in s.paragraphs)])
-            claim_text = " ".join(m.claim for m in markers).lower()
-            unsourced = [t for t in numeric_tokens(text) if _digits(t) not in claim_text]
-            report = run_self_check(
-                text, self.deps.brand_rules,
-                unsourced_numeric_tokens=unsourced, attempts=attempt,
+            return output
+
+        # 1. WRITE loop: brand lint + length only. Numeric sourcing waits for the
+        # tagging pass; the writer places no markers, so checking it here would
+        # read every number as unsourced and burn the regenerations on nothing.
+        output: FlagshipLLMOutput | None = None
+        feedback: list[str] | None = None
+        write_attempts = 1
+        for attempt in range(1, config.max_regenerations + 2):
+            candidate = write_call(feedback, attempt=attempt, action="flagship_draft")
+            if candidate is None:
+                break
+            output = candidate
+            write_attempts = attempt
+            interim = run_self_check(
+                _check_text(output), rules,
+                unsourced_numeric_tokens=[], attempts=attempt,
                 word_range=(min_words, max_words),
             )
-            last = (output.title, sections, markers, gaps, report)
-            if report.passed or attempt > config.max_regenerations:
-                return last
-            feedback = failure_feedback(report)
-        return last
+            if interim.passed or attempt > config.max_regenerations:
+                break
+            feedback = failure_feedback(interim)
+        if output is None:
+            return None
+
+        # 2. CRITIQUE once (stylistic only; sourcing stays with the tagging pass
+        # and the Quality Gate), then at most ONE revision pass.
+        critique = self._run_critique(ctx, campaign_id, blocks, output)
+        if critique is not None and critique.verdict == "revise" and critique.edit_directions:
+            directions = [
+                e.model_dump()
+                for e in critique.edit_directions[: rules.critique_rubric.max_edit_directions]
+            ]
+            revised = write_call(
+                None, attempt=write_attempts + 1, action="flagship_revise",
+                edit_directions=directions,
+            )
+            if revised is not None and revised.sections:
+                output = revised
+
+        # 3. TAG the finished prose, then 4. at most ONE bounded repair + re-tag.
+        # Anything still unsourced after that goes to humans, never auto-fixed.
+        markers, unsourced, _dropped = self._run_tagging(ctx, campaign_id, context,
+                                                         blocks, output)
+        if unsourced:
+            repaired = write_call(
+                None, attempt=write_attempts + 1, action="flagship_repair",
+                repair_edits=[u.model_dump() for u in unsourced],
+            )
+            if repaired is not None and repaired.sections:
+                output = repaired
+                markers, unsourced, _dropped = self._run_tagging(
+                    ctx, campaign_id, context, blocks, output
+                )
+
+        flagship_id = config.flagship_asset_type
+        gaps: list[GapNote] = [
+            GapNote(
+                gap_id=f"gap_{campaign_id}_{flagship_id}_{i}",
+                asset_id=flagship_id,
+                section=note.section,
+                needed=note.needed,
+            )
+            for i, note in enumerate(output.gap_notes, start=1)
+        ]
+        for i, finding in enumerate(unsourced, start=1):
+            gaps.append(
+                GapNote(
+                    gap_id=f"gap_{campaign_id}_{flagship_id}_unsourced_{i}",
+                    asset_id=flagship_id,
+                    section="(claim sourcing)",
+                    needed=(
+                        "unsourced claim still in the prose after one repair pass: "
+                        f'"{finding.sentence_quote[:160]}" ({finding.problem}); '
+                        "human review must source or remove it"
+                    ),
+                )
+            )
+
+        # 5. Final deterministic self-check with numeric sourcing restored: a
+        # number is sourced when it appears in a tagged claim or its sentence.
+        text = _check_text(output)
+        claim_text = " ".join(f"{m.claim} {m.sentence}" for m in markers).lower()
+        unsourced_tokens = [t for t in numeric_tokens(text) if _digits(t) not in claim_text]
+        report = run_self_check(
+            text, rules,
+            unsourced_numeric_tokens=unsourced_tokens, attempts=write_attempts,
+            word_range=(min_words, max_words),
+        )
+        sections = [
+            DraftSection(heading=s.heading, paragraphs=list(s.paragraphs))
+            for s in output.sections
+        ]
+        core = {
+            "thesis": output.thesis,
+            "arc": output.arc,
+            "primary_cta": output.primary_cta,
+        }
+        return output.title, sections, markers, gaps, report, core
+
+    def _run_critique(
+        self,
+        ctx: RunContext,
+        campaign_id: str,
+        blocks: list[SystemBlock],
+        output: FlagshipLLMOutput,
+    ) -> CritiqueLLMOutput | None:
+        """One stylistic critique call against the pack rubric. Unparsable output
+        degrades to no revision (the draft proceeds as written), never a crash."""
+        rules = self.deps.brand_rules
+        payload: dict[str, Any] = {
+            "draft": {
+                "title": output.title,
+                "thesis": output.thesis,
+                "arc": output.arc,
+                "primary_cta": output.primary_cta,
+                "sections": [s.model_dump() for s in output.sections],
+            },
+        }
+        exemplars = [e.model_dump() for e in rules.exemplars.flagship if e.excerpt]
+        if exemplars:
+            payload["exemplar_excerpts"] = exemplars
+        with ctx.span("l3-flagship-critique", "llm") as span:
+            parsed, response, truncated = gen.run_json_call(
+                self.deps.provider, blocks,
+                gen.critique_user_prompt(payload, rules.critique_rubric),
+                CritiqueLLMOutput,
+                max_tokens=CRITIQUE_MAX_TOKENS,
+                timeout_s=DERIVATIVE_TIMEOUT_S,
+                truncation_raise_factor=self.deps.config.truncation_raise_factor,
+            )
+        self._emit_l3(
+            ctx, span.span_id, span.duration_ms, response,
+            template_id=gen.CRITIQUE_TEMPLATE_ID,
+            action="flagship_critique",
+            confidence=parsed.confidence if parsed else 0.0,
+            extra={
+                "shiftai.generation.truncation_retried": truncated,
+                "shiftai.critique.verdict": parsed.verdict if parsed else "unparsable",
+                "shiftai.critique.edit_directions":
+                    len(parsed.edit_directions) if parsed else 0,
+                "shiftai.business_object.type": "campaign_asset",
+                "shiftai.business_object.id":
+                    f"{campaign_id}:{self.deps.config.flagship_asset_type}",
+            },
+        )
+        self._check_budget(ctx, FLAGSHIP_TIMEOUT_S)
+        return parsed
+
+    def _run_tagging(
+        self,
+        ctx: RunContext,
+        campaign_id: str,
+        context: DraftingContext,
+        blocks: list[SystemBlock],
+        output: FlagshipLLMOutput,
+    ) -> tuple[list[ClaimMarker], list[UnsourcedClaim], int]:
+        """One claim-tagging call, verified in code (verbatim sentences and
+        verified refs only). Unparsable output degrades to zero markers: the
+        numeric backstop and the no-marker escalation keep it visible."""
+        draft_text = _draft_text(output)
+        payload = {
+            "draft_text": draft_text,
+            "verified_proof_points": [
+                p.model_dump() for p in context.pack.proof_points
+                if p.source_ref in context.verified_refs
+            ],
+        }
+        with ctx.span("l3-claim-tagging", "llm") as span:
+            parsed, response, truncated = gen.run_json_call(
+                self.deps.provider, blocks,
+                gen.tagging_user_prompt(payload),
+                TaggingLLMOutput,
+                max_tokens=TAGGING_MAX_TOKENS,
+                timeout_s=DERIVATIVE_TIMEOUT_S,
+                truncation_raise_factor=self.deps.config.truncation_raise_factor,
+            )
+        markers: list[ClaimMarker] = []
+        unsourced: list[UnsourcedClaim] = []
+        dropped = 0
+        if parsed is not None:
+            markers, unsourced, dropped = ground_tagging(
+                parsed, draft_text, context.verified_refs
+            )
+        self._emit_l3(
+            ctx, span.span_id, span.duration_ms, response,
+            template_id=gen.TAGGING_TEMPLATE_ID,
+            action="claim_tagging",
+            confidence=parsed.confidence if parsed else 0.0,
+            extra={
+                "shiftai.generation.truncation_retried": truncated,
+                "shiftai.tagging.markers": len(markers),
+                "shiftai.tagging.unsourced": len(unsourced),
+                "shiftai.tagging.dropped_unverified": dropped,
+                "shiftai.business_object.type": "campaign_asset",
+                "shiftai.business_object.id":
+                    f"{campaign_id}:{self.deps.config.flagship_asset_type}",
+            },
+        )
+        self._check_budget(ctx, FLAGSHIP_TIMEOUT_S)
+        return markers, unsourced, dropped
 
     # ------------------------------------------------------------- human gate
 
@@ -556,10 +775,12 @@ class ContentRepurposingAgent:
         flagged: list[str] = []  # staged but self-check not clean — open review flags
         gap_notes: list[GapNote] = []
 
+        core = _flagship_core(flagship)
+
         def worker(job: DerivativeJob) -> None:
             draft = self._generate_derivative(
                 ctx, campaign_id, job, inventory, blocks, audience_note,
-                folder=folder, slug=slug,
+                folder=folder, slug=slug, flagship_core=core,
             )
             gap_notes.extend(draft.gap_notes)
             if draft.status == "staged":
@@ -687,9 +908,15 @@ class ContentRepurposingAgent:
         folder: str,
         slug: str,
         instruction: str | None = None,
+        flagship_core: dict[str, str] | None = None,
     ) -> StagedDraft:
         """One derivative: generate → ground → self-check loop → stage or withhold."""
         config = self.deps.config
+        exemplar_excerpts = [
+            e.model_dump()
+            for e in self.deps.brand_rules.exemplars.per_channel.get(job.asset_type, [])
+            if e.excerpt
+        ]
         feedback: list[str] | None = None
         title = job.recipe.label
         variants_sections: list[DraftSection] = []
@@ -704,6 +931,8 @@ class ContentRepurposingAgent:
                         job.recipe, job.volume, inventory, audience_note,
                         instruction=instruction, selfcheck_feedback=feedback,
                         min_words=job.min_words, max_words=job.max_words,
+                        flagship_core=flagship_core,
+                        exemplar_excerpts=exemplar_excerpts or None,
                     ),
                     DerivativeLLMOutput,
                     max_tokens=DERIVATIVE_MAX_TOKENS,
@@ -763,7 +992,10 @@ class ContentRepurposingAgent:
         # as review flags, rather than dead-ending the asset with no path forward.
         # Only genuinely unusable output (no variants at all) is withheld.
         staged = bool(variants_sections)
-        version = self._next_version(campaign_id, job.asset_id)
+        version = self._next_version(
+            campaign_id, job.asset_id,
+            folder=folder, slug=slug, asset_type=job.asset_type,
+        )
         if not staged:
             gap_notes = [
                 *gap_notes,
@@ -865,17 +1097,7 @@ class ContentRepurposingAgent:
         slug = str(case["campaign_slug"])
         if is_flagship:
             context = load_drafting_context(self.deps.store, self.deps.config, campaign_id)
-            payload = {
-                "approved_outline": {
-                    "title": context.flagship_outline.title,
-                    "sections": context.draftable_sections,
-                },
-                "audience_offer_pack": context.pack.model_dump(
-                    include={"vertical", "personas", "value_proposition", "differentiators",
-                             "messaging_angles", "ctas", "channel_emphasis"}
-                ),
-                "verified_proof_points": [p.model_dump() for p in context.pack.proof_points],
-            }
+            payload = self._flagship_payload(context)
             blocks = gen.system_blocks(self.deps.config, self.deps.brand_rules)
             result = self._generate_flagship(
                 ctx, campaign_id, context, blocks, payload, instruction=instruction
@@ -887,15 +1109,18 @@ class ContentRepurposingAgent:
                     case_id=campaign_id, trace_id=ctx.trace_id, campaign_id=campaign_id,
                     status="flagship_staged", escalation_reasons=["tool_failure"],
                 )
-            title, sections, markers, gaps, report = result
+            title, sections, markers, gaps, report, core = result
             prior = db.latest_draft(self.deps.store, campaign_id, asset_id)
-            version = self._next_version(campaign_id, asset_id)
+            version = self._next_version(
+                campaign_id, asset_id, folder=folder, slug=slug, asset_type=asset_id,
+            )
             draft = StagedDraft(
                 campaign_id=campaign_id, asset_id=asset_id, asset_type=asset_id,
                 kind="flagship", title=title or context.flagship_outline.title,
                 version=version,
                 filename=docs.draft_filename(slug, asset_id, version),
                 file_ref="", claim_map_ref="",
+                thesis=core["thesis"], arc=core["arc"], primary_cta=core["primary_cta"],
                 sections=sections, claim_markers=markers, self_check=report,
                 gap_notes=gaps, status="staged" if report.passed and sections else "withheld",
                 rework_of_version=prior.version if prior else None,
@@ -938,10 +1163,12 @@ class ContentRepurposingAgent:
             recipe=recipe, volume=chosen.variants,
             min_words=chosen.min_words, max_words=chosen.max_words,
         )
+        flagship = db.latest_draft(self.deps.store, campaign_id, flagship_id)
         draft = self._generate_derivative(
             ctx, campaign_id, job, inventory, blocks,
             {"campaign_id": campaign_id}, folder=folder, slug=slug,
             instruction=instruction,
+            flagship_core=_flagship_core(flagship) if flagship else None,
         )
         if prior is not None:
             draft = draft.model_copy(update={"rework_of_version": prior.version})
@@ -1025,9 +1252,37 @@ class ContentRepurposingAgent:
             raise RepurposeGateError(f"no asset checklist exists for {campaign_id!r}")
         return AssetChecklist.model_validate(record.value)
 
-    def _next_version(self, campaign_id: str, asset_id: str) -> int:
+    def _next_version(
+        self,
+        campaign_id: str,
+        asset_id: str,
+        *,
+        folder: str | None = None,
+        slug: str | None = None,
+        asset_type: str | None = None,
+    ) -> int:
+        """The next draft version: one past BOTH the store's latest record and
+        any matching file already in the workspace drafts folder. The workspace
+        scan makes a retry succeed after a run that uploaded a draft but died
+        before persisting its record, instead of failing forever on the
+        additive 'refusing to overwrite' rule."""
         prior = db.latest_draft(self.deps.store, campaign_id, asset_id)
-        return (prior.version + 1) if prior else 1
+        version = (prior.version + 1) if prior else 1
+        if folder and slug:
+            prefix = f"{slug}-{(asset_type or asset_id).replace('_', '-')}-v"
+            pattern = re.compile(rf"^{re.escape(prefix)}(\d+)\.docx$")
+            try:
+                files = self.deps.workspace.list_files(f"{folder}/drafts")
+            except Exception:
+                files = []  # a scan failure never blocks drafting; upload still guards
+            staged = [
+                int(m.group(1))
+                for f in files
+                if (m := pattern.match(f.name)) is not None
+            ]
+            if staged:
+                version = max(version, max(staged) + 1)
+        return version
 
     def _save_case(
         self, campaign_id: str, ctx: RunContext, *, status: RepurposeStatus,
@@ -1060,6 +1315,8 @@ class ContentRepurposingAgent:
             db.save_case(self.deps.store, campaign_id, {
                 **existing, "campaign_id": campaign_id, "trace_id": ctx.trace_id,
                 "status": "failed", "error_type": error_type,
+                "error_detail": str(exc)[:500],
+                "error_hint": _error_hint(error_type, str(exc)),
             })
         except Exception:
             pass  # store down: telemetry below is the surviving record
@@ -1180,6 +1437,52 @@ def inventory_pack_note(store: ContextStore, campaign_id: str) -> str:
     if record is None:
         return ""
     return str(record.value.get("value_proposition", ""))
+
+
+def _error_hint(error_type: str, detail: str) -> str:
+    """One sentence a non-engineer can act on, stored with the failed case and
+    shown in the studio next to the retry button."""
+    if error_type == "WorkspaceWriteError" and "overwrite" in detail:
+        return (
+            "A draft file with this name already exists in the campaign workspace "
+            "(usually an earlier run, or another campaign created from the same "
+            "topic). Retrying stages the next version number automatically."
+        )
+    if error_type == "RunTimeoutError":
+        return (
+            "The drafting run exceeded its time budget, usually a slow model "
+            "response. Retrying starts a fresh run."
+        )
+    if error_type in {"PlanNotReadyError", "FlagshipOutlineMissingError"}:
+        return (
+            "The campaign plan is not ready for drafting: confirm the pack and "
+            "the plan in the Campaign box first, then retry."
+        )
+    return (
+        "An unexpected error stopped the run; the details above went to "
+        "telemetry. Retrying is safe: drafts are versioned and never overwritten."
+    )
+
+
+def _draft_text(output: FlagshipLLMOutput) -> str:
+    """The text the tagging pass audits: title, headings and prose (the same
+    shape ``docs.flagship_plain_text`` renders for the inventory extraction)."""
+    parts: list[str] = [output.title]
+    for section in output.sections:
+        parts.append(section.heading)
+        parts.extend(section.paragraphs)
+    return "\n".join(parts)
+
+
+def _check_text(output: FlagshipLLMOutput) -> str:
+    """The text the deterministic self-check lints and counts (title + prose,
+    headings excluded, matching the pre-split behavior)."""
+    return " ".join([output.title, *(p for s in output.sections for p in s.paragraphs)])
+
+
+def _flagship_core(draft: StagedDraft) -> dict[str, str]:
+    """The flagship core every derivative re-tells: thesis, arc, single CTA."""
+    return {"thesis": draft.thesis, "arc": draft.arc, "primary_cta": draft.primary_cta}
 
 
 def _now() -> str:

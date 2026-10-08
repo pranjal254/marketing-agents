@@ -21,16 +21,19 @@ DraftState = Literal["staged", "withheld"]
 
 
 class ClaimMarker(BaseModel):
-    """One inline ``[c-N]`` marker in a draft: claim text → verified source ref.
-    Spec step 3: inline source markers so reviewers verify provenance without
-    re-research (dev binding: marker table in the .docx + sidecar claim map;
-    real Word comments arrive with the Graph/OneDrive binding)."""
+    """One ``[c-N]`` claim marker: claim text → verified source ref. Spec step 3:
+    source markers so reviewers verify provenance without re-research (dev
+    binding: marker table in the .docx + sidecar claim map; real Word comments
+    arrive with the Graph/OneDrive binding). Since the tagging pass split off
+    from writing, markers anchor by VERBATIM SENTENCE rather than inline [c-N]
+    clutter in the prose; ``sentence`` is empty on drafts tagged the old way."""
 
     model_config = ConfigDict(extra="ignore")
 
     marker: str
     claim: str
     source_ref: str
+    sentence: str = ""
 
 
 class GapNote(BaseModel):
@@ -79,6 +82,12 @@ class StagedDraft(BaseModel):
     filename: str
     file_ref: str
     claim_map_ref: str
+    # The flagship core the derivatives re-tell: the single argument, the
+    # narrative movement, and the one action for the reader (empty on
+    # derivatives and on drafts staged before the writer emitted them).
+    thesis: str = ""
+    arc: str = ""
+    primary_cta: str = ""
     sections: list[DraftSection] = Field(default_factory=list)
     claim_markers: list[ClaimMarker] = Field(default_factory=list)
     claim_lineage: list[str] = Field(default_factory=list)  # inventory claim_ids (derivatives)
@@ -135,14 +144,76 @@ class FlagshipGapNoteOut(BaseModel):
 
 
 class FlagshipLLMOutput(BaseModel):
-    """Flagship drafting contract (parsed, validated; grounding enforced after)."""
+    """Flagship WRITING contract: clean prose plus the campaign core (thesis,
+    arc, primary CTA). Claim tagging is a separate pass (``TaggingLLMOutput``),
+    so the writer carries no claims list and places no inline markers."""
 
     model_config = ConfigDict(extra="ignore")
 
     title: str = ""
+    thesis: str = ""
+    arc: str = ""
+    primary_cta: str = ""
     sections: list[FlagshipLLMSection] = Field(default_factory=list)
-    claims_used: list[ClaimMarker] = Field(default_factory=list)
     gap_notes: list[FlagshipGapNoteOut] = Field(default_factory=list)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class CritiqueEdit(BaseModel):
+    """One section-anchored edit direction from the critique pass: an
+    instruction to the writer, never rewritten text."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    section: str = ""
+    quote: str = ""
+    direction: str = ""
+    rubric_item: str = ""
+
+
+class CritiqueLLMOutput(BaseModel):
+    """Critique contract (stylistic only; sourcing stays with the tagging pass
+    and the Quality Gate, so the two never fight)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    verdict: Literal["pass", "revise"] = "pass"
+    scores: dict[str, float] = Field(default_factory=dict)
+    edit_directions: list[CritiqueEdit] = Field(default_factory=list)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class TaggedClaim(BaseModel):
+    """One tagged claim: the carrying sentence quoted verbatim (verified in
+    code), the claim text, and its verified source ref."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    marker: str = ""
+    sentence_quote: str = ""
+    claim: str = ""
+    source_ref: str = ""
+
+
+class UnsourcedClaim(BaseModel):
+    """A statistic, named outcome or competitor comparison the tagger could not
+    match to a verified proof point, with the smallest edit that would fix it.
+    The tagger never applies the edit; a bounded repair call does."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    sentence_quote: str = ""
+    problem: str = ""
+    suggested_edit: str = ""
+
+
+class TaggingLLMOutput(BaseModel):
+    """Claim-tagging contract: an audit OF the finished prose, never a rewrite."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    claims_used: list[TaggedClaim] = Field(default_factory=list)
+    unsourced: list[UnsourcedClaim] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
 

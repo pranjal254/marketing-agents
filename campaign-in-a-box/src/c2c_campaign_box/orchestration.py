@@ -89,6 +89,7 @@ from c2c_campaign_box.workspace import (
     CampaignWorkspace,
     WorkspaceWriteError,
     campaign_folder_name,
+    campaign_uid,
     create_campaign_workspace,
     slugify,
 )
@@ -398,6 +399,16 @@ class CampaignBoxOrchestrator:
         # ---- Step 7b: workspace from the versioned template + documents ------------
         folder = campaign_folder_name(config, brief.topic, window_start)
         campaign_slug = slugify(brief.topic)
+        # Two campaigns created from the same topic in the same quarter compute
+        # the same folder, and the additive upload rule then fails the second
+        # one's drafts with 'refusing to overwrite' (observed live, 2026-10-07).
+        # When another campaign already owns the folder, disambiguate BOTH the
+        # folder and the slug with this campaign's short uid.
+        owner = db.folder_owner(deps.store, folder)
+        if owner is not None and owner != campaign_id:
+            uid = campaign_uid(campaign_id)
+            folder = campaign_folder_name(config, brief.topic, window_start, uid=uid)
+            campaign_slug = f"{campaign_slug}-{uid}"
         try:
             with ctx.span("workspace-create", "api") as ws_span:
                 refs_map = create_campaign_workspace(deps.workspace, config, folder)

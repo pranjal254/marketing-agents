@@ -20,8 +20,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-BRAND_RULES_VERSION = "0.2.0"
-_RULES_FILE = "rules_v0_2_0.json"
+BRAND_RULES_VERSION = "0.3.0"
+_RULES_FILE = "rules_v0_3_0.json"
 
 # One committed JSON per business-unit brand. The active pack is a deployment
 # decision (bridge/CLI reads C2C_BRAND_PACK) — agent code stays pack-agnostic.
@@ -70,6 +70,60 @@ class Playbook(BaseModel):
     word_count: str | None = Field(default=None, alias="wordCount")
 
 
+class Exemplar(BaseModel):
+    """One approved piece that sounds the way the brand should. The excerpt is
+    what reaches the model (as case data, never as a template to copy)."""
+
+    model_config = ConfigDict(frozen=True)
+    title: str = ""
+    excerpt: str = ""
+    why: str = ""
+
+
+class Exemplars(BaseModel):
+    """Register exemplars, marketing-supplied. Empty lists mean no exemplar
+    guidance is sent; the prompts degrade gracefully."""
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    note: str = ""
+    flagship: list[Exemplar] = Field(default_factory=list)
+    per_channel: dict[str, list[Exemplar]] = Field(default_factory=dict, alias="perChannel")
+
+
+class RubricItem(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    id: str
+    question: str
+
+
+_DEFAULT_RUBRIC_ITEMS: tuple[tuple[str, str], ...] = (
+    ("thesis", "Is there a clear thesis a reader could repeat after one read, "
+               "stated early, with every section advancing it?"),
+    ("specificity", "Are the nouns specific: processes, roles, systems and decisions "
+                    "rather than organizations, solutions, capabilities?"),
+    ("non_repetition", "Does any idea repeat across sections in different words?"),
+    ("distinctiveness", "Could any sentence appear in a competitor's brochure unchanged?"),
+    ("register", "Does the tone match the exemplar excerpts: a senior practitioner "
+                 "talking to a peer?"),
+    ("shape", "Does the piece open on a concrete operating situation, explain the "
+              "mechanism, and land on practical next steps?"),
+)
+
+
+class CritiqueRubric(BaseModel):
+    """The flagship critique rubric, marketing-editable in the pack. Packs
+    without one get this default so the critique pass always has a rubric."""
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    pass_score: int = Field(default=4, alias="passScore", ge=1, le=5)
+    max_edit_directions: int = Field(default=8, alias="maxEditDirections", ge=1)
+    items: list[RubricItem] = Field(
+        default_factory=lambda: [
+            RubricItem(id=i, question=q) for i, q in _DEFAULT_RUBRIC_ITEMS
+        ]
+    )
+
+
 class Practice(BaseModel):
     """One LevelShift practice from the Brand Playbook's practice-messaging
     section: marketing-approved positioning AND proof points — the committed,
@@ -107,6 +161,12 @@ class BrandRules(BaseModel):
     style_rules: list[str] = Field(default_factory=list, alias="styleRules")
     industries: list[str] = Field(default_factory=list)
     practices: list[Practice] = Field(default_factory=list)
+    # v0.3.0 additions: register exemplars and the flagship critique rubric,
+    # both marketing-editable pack data (older packs get working defaults).
+    exemplars: Exemplars = Field(default_factory=Exemplars)
+    critique_rubric: CritiqueRubric = Field(
+        default_factory=CritiqueRubric, alias="critiqueRubric"
+    )
 
 
 def load_brand_rules(pack: str = DEFAULT_BRAND_PACK) -> BrandRules:
@@ -259,7 +319,7 @@ def brand_prompt_block(rules: BrandRules) -> str:
             for p in rules.practices
         )
         block += (
-            "Practices (marketing-approved positioning and proof points — the ONLY "
+            "Practices (marketing-approved positioning and proof points, the ONLY "
             "pre-approved factual claims; cite them as source 'brand-playbook:"
             "<practice id>'):\n" + practices + "\n"
         )

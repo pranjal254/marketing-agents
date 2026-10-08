@@ -15,7 +15,13 @@ from shiftai_shared.config import SharedSettings
 from c2c_bridge.app import create_app
 from tests.test_box_bridge import PACK_JSON, REUSE_JSON
 from tests.test_bridge import CLASSIFY_OK, COMPLETE_REQUEST
-from tests.test_repurpose_bridge import DERIVATIVE_JSON, FLAGSHIP_JSON, INVENTORY_JSON
+from tests.test_repurpose_bridge import (
+    CRITIQUE_JSON,
+    DERIVATIVE_JSON,
+    FLAGSHIP_JSON,
+    INVENTORY_JSON,
+    TAGGING_JSON,
+)
 
 CONSOLIDATION_JSON = json.dumps(
     {
@@ -79,9 +85,11 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
                 (lambda u: "audience & offer pack" in u, PACK_JSON),
                 (lambda u: "reuse / adapt / create" in u, REUSE_JSON),
                 (lambda u: "Draft the flagship asset" in u, FLAGSHIP_JSON),
+                (lambda u: u.startswith("Review this flagship draft"), CRITIQUE_JSON),
+                (lambda u: u.startswith("Tag the claims"), TAGGING_JSON),
                 (lambda u: u.startswith("Extract the confirmed flagship's claim inventory"),
                  INVENTORY_JSON),
-                (lambda u: "derivative from the claim inventory" in u, DERIVATIVE_JSON),
+                (lambda u: "derivative of this campaign's flagship" in u, DERIVATIVE_JSON),
             ],
         )
 

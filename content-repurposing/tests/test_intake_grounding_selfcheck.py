@@ -11,7 +11,7 @@ from c2c_content_repurposing.agent_config import RepurposingConfig
 from c2c_content_repurposing.grounding import (
     deterministic_inventory,
     ground_derivative,
-    ground_flagship,
+    ground_tagging,
     numeric_tokens,
     verify_inventory_items,
 )
@@ -26,8 +26,9 @@ from c2c_content_repurposing.models import (
     ClaimMarker,
     DerivativeLLMOutput,
     DerivativeVariant,
-    FlagshipLLMOutput,
-    FlagshipLLMSection,
+    TaggedClaim,
+    TaggingLLMOutput,
+    UnsourcedClaim,
 )
 from c2c_content_repurposing.selfcheck import failure_feedback, run_self_check
 
@@ -70,35 +71,84 @@ def test_intake_requires_flagship_outline(config: RepurposingConfig) -> None:
         load_drafting_context(store, config, CAMPAIGN_ID)
 
 
-# ------------------------------------------------------------------ flagship grounding
+# ------------------------------------------------------------------ claim tagging
+
+TAGGING_DRAFT_TEXT = "\n".join(
+    [
+        "T",
+        "good",
+        "Manufacturers report 42% faster onboarding, which holds up in practice.",
+        "bad-ref",
+        "An invented stat of 87% sits here.",
+        "prose",
+        "Plain positioning prose.",
+    ]
+)
 
 
-def _flagship_output() -> FlagshipLLMOutput:
-    return FlagshipLLMOutput(
-        title="T",
-        sections=[
-            FlagshipLLMSection(heading="good", paragraphs=["Sourced fact [c-1] holds."]),
-            FlagshipLLMSection(heading="bad-ref", paragraphs=["Invented stat [c-2] here."]),
-            FlagshipLLMSection(heading="orphan", paragraphs=["Marker [c-9] undefined."]),
-            FlagshipLLMSection(heading="bare-number", paragraphs=["Growth of 37% unsourced."]),
-            FlagshipLLMSection(heading="prose", paragraphs=["Plain positioning prose."]),
-        ],
+def test_ground_tagging_keeps_verbatim_verified_claims_only() -> None:
+    output = TaggingLLMOutput(
         claims_used=[
-            ClaimMarker(marker="c-1", claim="Sourced fact", source_ref="sig:1"),
-            ClaimMarker(marker="c-2", claim="Invented stat", source_ref="not-a-source"),
+            TaggedClaim(
+                marker="c-9",
+                sentence_quote="Manufacturers report 42% faster onboarding, "
+                               "which holds up in practice.",
+                claim="42% faster onboarding",
+                source_ref="sig:1",
+            ),
+            TaggedClaim(  # verbatim sentence, unverified ref → unsourced finding
+                marker="c-2",
+                sentence_quote="An invented stat of 87% sits here.",
+                claim="87%",
+                source_ref="not-a-source",
+            ),
+            TaggedClaim(  # hallucinated anchor → dropped
+                marker="c-3",
+                sentence_quote="A sentence the draft does not contain.",
+                claim="x",
+                source_ref="sig:1",
+            ),
         ],
-        confidence=0.8,
+        unsourced=[
+            UnsourcedClaim(  # verbatim → kept for the repair pass
+                sentence_quote="An invented stat of 87% sits here.",
+                problem="87% matches no verified proof point",
+                suggested_edit="remove the figure",
+            ),
+            UnsourcedClaim(  # hallucinated anchor → dropped
+                sentence_quote="also not in the draft",
+                problem="p",
+                suggested_edit="e",
+            ),
+        ],
     )
+    markers, unsourced, dropped = ground_tagging(output, TAGGING_DRAFT_TEXT, {"sig:1"})
+    assert [m.marker for m in markers] == ["c-1"]  # renumbered, verified only
+    assert markers[0].source_ref == "sig:1"
+    assert markers[0].sentence in TAGGING_DRAFT_TEXT  # verbatim anchor kept
+    # The unverified-ref claim became an unsourced finding alongside the model's
+    # own verbatim finding; both hallucinated anchors were dropped.
+    assert len(unsourced) == 2
+    assert all("87%" in u.sentence_quote for u in unsourced)
+    assert dropped == 2
 
 
-def test_ground_flagship_strips_everything_unverified() -> None:
-    sections, markers, gaps = ground_flagship(
-        _flagship_output(), {"sig:1"}, "cmp", "flagship_blog"
+def test_ground_tagging_renumbers_in_reading_order() -> None:
+    text = "Alpha grew 10% in a year. Later, Beta grew 20% in a year."
+    output = TaggingLLMOutput(
+        claims_used=[
+            TaggedClaim(marker="c-7", sentence_quote="Beta grew 20% in a year.",
+                        claim="Beta grew 20%", source_ref="sig:1"),
+            TaggedClaim(marker="c-8", sentence_quote="Alpha grew 10% in a year.",
+                        claim="Alpha grew 10%", source_ref="sig:1"),
+        ],
     )
-    assert [s.heading for s in sections] == ["good", "prose"]
-    assert [m.marker for m in markers] == ["c-1"]
-    stripped = {g.section for g in gaps}
-    assert stripped == {"bad-ref", "orphan", "bare-number"}
+    markers, unsourced, dropped = ground_tagging(output, text, {"sig:1"})
+    assert [(m.marker, m.claim) for m in markers] == [
+        ("c-1", "Alpha grew 10%"),
+        ("c-2", "Beta grew 20%"),
+    ]
+    assert unsourced == [] and dropped == 0
 
 
 def test_numeric_token_patterns() -> None:

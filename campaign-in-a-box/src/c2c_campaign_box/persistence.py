@@ -39,6 +39,16 @@ def save_plan_case(store: ContextStore, campaign_id: str, state: dict[str, Any])
     store.put(KIND_PLAN_CASE, campaign_id, {**state, "updated_at": _now()})
 
 
+def folder_owner(store: ContextStore, folder: str) -> str | None:
+    """Which campaign already claims this workspace folder, if any. Two
+    same-topic campaigns in one quarter would compute the same folder name;
+    the second must disambiguate or its additive uploads fail."""
+    for record in store.query(KIND_PLAN_CASE):
+        if str(record.value.get("folder", "")) == folder:
+            return str(record.value.get("campaign_id") or record.key)
+    return None
+
+
 def load_plan_case(store: ContextStore, campaign_id: str) -> dict[str, Any] | None:
     record = store.get(KIND_PLAN_CASE, campaign_id)
     return record.value if record else None

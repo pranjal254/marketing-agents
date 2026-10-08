@@ -67,13 +67,13 @@ def run_self_check(
 def failure_feedback(report: SelfCheckReport) -> list[str]:
     """Human-readable failure codes handed back to the model on regeneration."""
     feedback = [
-        f"{f['rule_id']}: {f['term']} — {f['detail']}"
+        f"{f['rule_id']}: {f['term']}: {f['detail']}"
         for f in report.findings
         if f["severity"] == "error"
     ]
     if report.unsourced_numeric_tokens:
         feedback.append(
-            "unsourced_numeric: these figures appear in no cited claim — remove them or "
+            "unsourced_numeric: these figures appear in no cited claim; remove them or "
             "cite the inventory item that contains them: "
             + ", ".join(report.unsourced_numeric_tokens)
         )

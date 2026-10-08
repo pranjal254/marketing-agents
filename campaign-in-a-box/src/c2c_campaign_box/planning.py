@@ -129,9 +129,12 @@ def pack_user_prompt(brief: ApprovedBrief, bundle: IntelBundle) -> str:
     }
     return (
         "Produce the audience & offer pack for this approved campaign brief. Ground "
-        "every persona, proof point and channel-emphasis statement in a named source "
-        "(signal URI or brief field). A claim you cannot source goes in gaps[], never "
-        "in proof_points. Remember: events are the proven channel for Type 3/4 "
+        "every proof point in a named source (signal URI or brief field): a "
+        "statistic, named outcome or competitor comparison you cannot source goes "
+        "in gaps[], never in proof_points. Personas, messaging angles and "
+        "channel-emphasis statements are your marketing judgment: tie each to the "
+        "brief field or signal that motivates it, and write it with conviction "
+        "rather than hedging. Remember: events are the proven channel for Type 3/4 "
         "accounts; email/SEO carry standard BU volume.\n"
         + _case_data_block(payload)
         + f"Respond with ONLY valid JSON in this exact shape, nothing else:\n{PACK_CONTRACT}"
@@ -155,7 +158,7 @@ def reuse_user_prompt(
     return (
         "For every checklist asset decide reuse / adapt / create. A reuse or adapt "
         "decision MUST cite one of the evaluated candidate asset_refs for that asset "
-        "type (its fitness score is already computed — explain the decision, do not "
+        "type (its fitness score is already computed: explain the decision, do not "
         "re-score). Never mark create when a strong candidate exists without saying "
         "why. For every create/adapt asset draft a content outline seeded from the "
         "messaging angles; planned_claims may only cite the verified proof-point "

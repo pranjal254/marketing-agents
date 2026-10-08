@@ -71,10 +71,14 @@ def test_verbatim_system_prompt_is_versioned_and_untouched() -> None:
     prompt = (
         Path(__file__).resolve().parents[1]
         / "prompts"
-        / "content-repurposing.system.v1.0.0.md"
+        / "content-repurposing.system.v1.1.0.md"
     ).read_text(encoding="utf-8")
     # Spot-check the spec's exact language survived verbatim.
     assert "You are the Content Repurposing Agent" in prompt
     assert "leave a gap note instead of writing plausible content" in prompt
     assert "you never publish, post or send anything, anywhere" in prompt
     assert '"ShiftAI" always one word' in prompt
+    # v1.1.0: narrowed sourcing scope, practitioner persona, no em dashes.
+    assert "need no source" in prompt
+    assert "senior LevelShift practitioner" in prompt
+    assert chr(0x2014) not in prompt and chr(0x2013) not in prompt

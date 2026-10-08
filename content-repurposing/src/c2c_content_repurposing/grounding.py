@@ -1,9 +1,10 @@
 """Never-invent enforcement for drafting (spec guardrail 1, in code).
 
 The model proposes; this module verifies:
-- a flagship section survives only if every [c-N] marker it uses resolves to a
-  ``claims_used`` entry whose source_ref is a verified pack proof point — anything
-  else strips the section to a gap note;
+- a tagged claim survives only if its sentence_quote is a verbatim flagship
+  substring AND its source_ref is a verified pack proof point — a verified-
+  sentence claim citing an unverified ref becomes an unsourced finding, and a
+  claim whose sentence the draft does not contain is dropped as hallucinated;
 - an inventory item survives only if its quote is a verbatim flagship substring
   AND its source_ref is one of the flagship's marker refs;
 - a derivative may cite inventory claim_ids only, and any numeric/statistic token
@@ -21,9 +22,9 @@ from c2c_content_repurposing.models import (
     ClaimMarker,
     DerivativeLLMOutput,
     DerivativeVariant,
-    DraftSection,
-    FlagshipLLMOutput,
     GapNote,
+    TaggingLLMOutput,
+    UnsourcedClaim,
 )
 
 _MARKER = re.compile(r"\[(c-\d+)\]")
@@ -46,78 +47,68 @@ def numeric_tokens(text: str) -> list[str]:
     return [m.strip() for m in _NUMERIC_CLAIM.findall(text)]
 
 
-# ------------------------------------------------------------- flagship
+# ------------------------------------------------------------- claim tagging
 
 
-def ground_flagship(
-    output: FlagshipLLMOutput,
+def ground_tagging(
+    output: TaggingLLMOutput,
+    draft_text: str,
     verified_refs: set[str],
-    campaign_id: str,
-    asset_id: str,
-) -> tuple[list[DraftSection], list[ClaimMarker], list[GapNote]]:
-    """Returns (surviving sections, verified markers actually used, gap notes for
-    everything stripped). Enforcement, not trust:
-    - claims_used entries citing an unverified ref are rejected;
-    - a section whose text carries a marker without a verified claims_used entry
-      is stripped entirely (never partially rewritten by us — we flag, not edit);
-    - a section with a bare numeric claim and NO marker at all is stripped too.
+) -> tuple[list[ClaimMarker], list[UnsourcedClaim], int]:
+    """Verify the tagging pass in code. Returns (verified sentence-anchored
+    markers renumbered c-1.. in reading order, unsourced findings to repair,
+    dropped count). Enforcement, not trust:
+    - a claim whose sentence_quote is not a verbatim draft substring is dropped
+      (the tagger hallucinated the anchor; counted for telemetry);
+    - a verbatim claim citing a ref outside the verified proof points becomes an
+      unsourced finding with a removal edit — never a verified marker;
+    - the model's own unsourced findings are kept when their quote is verbatim
+      (a repair edit must point at real text), dropped otherwise.
     """
-    verified_markers = {
-        m.marker: m for m in output.claims_used if m.source_ref in verified_refs
-    }
-    rejected_markers = {m.marker for m in output.claims_used if m.source_ref not in verified_refs}
-
-    sections: list[DraftSection] = []
-    used_markers: list[ClaimMarker] = []
-    gap_notes: list[GapNote] = []
-    seen: set[str] = set()
-    gap_seq = 0
-
-    def gap(section: str, needed: str) -> None:
-        nonlocal gap_seq
-        gap_seq += 1
-        gap_notes.append(
-            GapNote(
-                gap_id=f"gap_{campaign_id}_{asset_id}_{gap_seq}",
-                asset_id=asset_id,
-                section=section,
-                needed=needed,
+    haystack = _normalize(draft_text)
+    kept: list[tuple[int, ClaimMarker]] = []
+    unsourced: list[UnsourcedClaim] = []
+    dropped = 0
+    for item in output.claims_used:
+        quote = _normalize(item.sentence_quote)
+        position = haystack.find(quote) if quote else -1
+        if position < 0:
+            dropped += 1
+            continue
+        if item.source_ref not in verified_refs:
+            unsourced.append(
+                UnsourcedClaim(
+                    sentence_quote=item.sentence_quote,
+                    problem="cites a source outside the verified proof points "
+                            f"({item.source_ref!r})",
+                    suggested_edit="remove the specific figure or named outcome, or "
+                                   "rephrase as qualified, non-quantified framing",
+                )
+            )
+            continue
+        kept.append(
+            (
+                position,
+                ClaimMarker(
+                    marker="",
+                    claim=item.claim or item.sentence_quote,
+                    source_ref=item.source_ref,
+                    sentence=item.sentence_quote,
+                ),
             )
         )
-
-    for note in output.gap_notes:  # the model's own declared gaps are kept as-is
-        gap(note.section, note.needed)
-
-    for section in output.sections:
-        text = " ".join(section.paragraphs)
-        found = markers_in(text)
-        unresolved = {m for m in found if m not in verified_markers}
-        if unresolved & rejected_markers:
-            gap(
-                section.heading,
-                "claims cited a source outside the verified proof points: "
-                + ", ".join(sorted(unresolved & rejected_markers)),
-            )
-            continue
-        if unresolved:
-            gap(
-                section.heading,
-                "inline markers without a claims_used entry: " + ", ".join(sorted(unresolved)),
-            )
-            continue
-        if not found and numeric_tokens(text):
-            gap(
-                section.heading,
-                "numeric/statistical content with no claim marker — provenance required",
-            )
-            continue
-        sections.append(DraftSection(heading=section.heading, paragraphs=list(section.paragraphs)))
-        for marker_id in sorted(found):
-            if marker_id not in seen:
-                seen.add(marker_id)
-                used_markers.append(verified_markers[marker_id])
-
-    return sections, used_markers, gap_notes
+    kept.sort(key=lambda pair: pair[0])
+    markers = [
+        m.model_copy(update={"marker": f"c-{i}"})
+        for i, (_, m) in enumerate(kept, start=1)
+    ]
+    for finding in output.unsourced:
+        quote = _normalize(finding.sentence_quote)
+        if quote and quote in haystack:
+            unsourced.append(finding)
+        else:
+            dropped += 1
+    return markers, unsourced, dropped
 
 
 # ------------------------------------------------------------- claim inventory
@@ -155,7 +146,9 @@ def deterministic_inventory(
             claim_id=f"cl-{i}",
             kind="claim",
             text=m.claim,
-            quote=m.claim,
+            # Sentence-anchored markers carry the verbatim flagship sentence;
+            # prefer it as the quote so the fallback inventory stays verbatim.
+            quote=m.sentence or m.claim,
             source_ref=m.source_ref,
         )
         for i, m in enumerate(markers, start=1)

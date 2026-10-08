@@ -10,10 +10,17 @@ import pytest
 from c2c_campaign_box.workspace import LocalCampaignWorkspace, WorkspaceWriteError
 from conftest import (
     CAMPAIGN_ID,
+    CRITIQUE_JSON,
     DERIVATIVE_JSON,
     FLAGSHIP_JSON,
+    TAGGING_JSON,
     build_agent,
     events_of,
+    is_critique,
+    is_derivative,
+    is_inventory,
+    is_tagging,
+    is_writer,
     seed_box_plan,
 )
 from shiftai_shared.config import SharedSettings
@@ -77,11 +84,15 @@ def test_flagship_selfcheck_regenerates_then_passes(
 ) -> None:
     bad = json.loads(FLAGSHIP_JSON)
     bad["sections"][1]["paragraphs"] = ["Shift AI helps here."]  # brand lint error
-    provider = MockLLMProvider(default=json.dumps(bad))
+    # Critique and tagging answer via the script; the WRITER answers via the
+    # default, bad on the first call and clean on every later one.
+    provider = MockLLMProvider(
+        script=[(is_critique, CRITIQUE_JSON), (is_tagging, TAGGING_JSON)],
+        default=json.dumps(bad),
+    )
     original_complete = provider.complete
 
     def complete(**kwargs: object) -> object:
-        # First call answers with the bad draft, every later call with the clean one.
         response = original_complete(**kwargs)  # type: ignore[arg-type]
         provider.default = FLAGSHIP_JSON
         return response
@@ -102,7 +113,10 @@ def test_flagship_persistent_selfcheck_failure_stages_with_flags_and_escalates(
 ) -> None:
     bad = json.loads(FLAGSHIP_JSON)
     bad["sections"][1]["paragraphs"] = ["Shift AI helps here."]
-    provider = MockLLMProvider(default=json.dumps(bad))
+    provider = MockLLMProvider(
+        script=[(is_critique, CRITIQUE_JSON), (is_tagging, TAGGING_JSON)],
+        default=json.dumps(bad),
+    )
     agent = build_agent(provider, store, workspace, sink, config, settings)
     outcome = agent.draft_flagship(CAMPAIGN_ID)
     # A flagship with body sections is STAGED for review (never a dead end); the
@@ -226,10 +240,11 @@ def test_fanout_inventory_falls_back_deterministically(
 ) -> None:
     provider = MockLLMProvider(
         script=[
-            (lambda u: "Draft the flagship asset" in u, FLAGSHIP_JSON),
-            (lambda u: u.startswith("Extract the confirmed flagship's claim inventory"),
-             "not json at all"),
-            (lambda u: "derivative from the claim inventory" in u, DERIVATIVE_JSON),
+            (is_writer, FLAGSHIP_JSON),
+            (is_critique, CRITIQUE_JSON),
+            (is_tagging, TAGGING_JSON),
+            (is_inventory, "not json at all"),
+            (is_derivative, DERIVATIVE_JSON),
         ],
         default="{}",
     )
@@ -260,10 +275,12 @@ def test_fanout_stages_failing_assets_with_review_flags(
 
     provider = MockLLMProvider(
         script=[
-            (lambda u: "Draft the flagship asset" in u, FLAGSHIP_JSON),
-            (lambda u: u.startswith("Extract the confirmed flagship's claim inventory"), "nope"),
+            (is_writer, FLAGSHIP_JSON),
+            (is_critique, CRITIQUE_JSON),
+            (is_tagging, TAGGING_JSON),
+            (is_inventory, "nope"),
             (is_faq, json.dumps(bad_derivative)),  # unsourced 87% → staged WITH a flag
-            (lambda u: "derivative from the claim inventory" in u, DERIVATIVE_JSON),
+            (is_derivative, DERIVATIVE_JSON),
         ],
         default="{}",
     )
@@ -399,7 +416,8 @@ def test_flagship_without_any_marker_stages_but_escalates(
     unmarked["sections"] = [
         {"heading": "Prose only", "paragraphs": ["Calm positioning without claims."]}
     ]
-    unmarked["claims_used"] = []
+    # Every call (writer, critique, tagging) answers with the marker-free draft:
+    # the critique parses as a default "pass" and the tagging as zero claims.
     provider = MockLLMProvider(default=json.dumps(unmarked))
     agent = build_agent(provider, store, workspace, sink, config, settings)
     outcome = agent.draft_flagship(CAMPAIGN_ID)

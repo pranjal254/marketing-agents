@@ -105,7 +105,7 @@ def test_system_prompt_is_spec_verbatim_and_versioned() -> None:
     from c2c_quality_gate.generation import load_system_prompt
 
     prompt = load_system_prompt()
-    assert SYSTEM_PROMPT_VERSION == "1.0.0"
+    assert SYSTEM_PROMPT_VERSION == "1.1.0"
     assert prompt.startswith("You are the contextual compliance checker")
     assert "never rewrite the content yourself" in prompt
     assert "never default a rule to pass" in prompt
