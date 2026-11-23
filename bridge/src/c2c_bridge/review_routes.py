@@ -31,7 +31,7 @@ class RoundIn(BaseModel):
 class ResolveIn(BaseModel):
     decision: str = Field(min_length=1)
     actor_id: str = Field(min_length=1)
-    actor_role: str = "marketing-lead"
+    actor_role: str = "bu-campaign-lead"
 
 
 class ConfirmIn(BaseModel):

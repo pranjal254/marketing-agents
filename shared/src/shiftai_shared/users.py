@@ -21,7 +21,7 @@ DEFAULT_USERS: tuple[dict[str, str], ...] = (
     {"id": "marcus", "name": "Ramya Srinivasan", "email": "ramya_s4@levelshift.com",
      "role": "BU Campaign Lead"},
     {"id": "rishi", "name": "Neeraj Vasant Sangani", "email": "neeraj_v@levelshift.com",
-     "role": "Marketing Lead"},
+     "role": "BU Campaign Lead"},
     {"id": "jen", "name": "Jen Cook", "email": "jen.cook@levelshift.com",
      "role": "Content Writer"},
     {"id": "tom", "name": "Tom Smith", "email": "tom.smith@levelshift.com",
@@ -111,6 +111,12 @@ class PostgresUserDirectory:
                     "VALUES (%s, %s, %s, %s, 'Active') ON CONFLICT (id) DO NOTHING",
                     (u["id"], u["name"], u["email"], u["role"]),
                 )
+            # Marketing Lead was merged into BU Campaign Lead (migration 0008);
+            # fold any surviving rows in case that migration hasn't run yet.
+            conn.execute(
+                "UPDATE users SET role = 'BU Campaign Lead', updated_at = now() "
+                "WHERE role = 'Marketing Lead'"
+            )
 
     def list_users(self) -> list[WorkspaceUser]:
         with self._connect() as conn:

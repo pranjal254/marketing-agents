@@ -178,7 +178,7 @@ def test_escalation_saves_human_readable_help(
     assert case is not None
     help_pkg = case["escalation_help"]
     assert help_pkg["reason_code"] == "compliance_ceiling"
-    assert help_pkg["routed_to_role"] == "Marketing Lead"
+    assert help_pkg["routed_to_role"] == "BU Campaign Lead"
     assert "pricing" in help_pkg["why"]
     kinds = {o["kind"] for o in help_pkg["options"]}
     assert "resolve" in kinds and "edit" in kinds

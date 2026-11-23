@@ -302,12 +302,12 @@ class ReviseIn(BaseModel):
     directive: str = ""
     aspects: list[str] = Field(default_factory=list)
     actor_id: str = Field(min_length=1)
-    actor_role: str = "marketing-lead"
+    actor_role: str = "bu-campaign-lead"
 
 
 class ReleaseIn(BaseModel):
     actor_id: str = Field(min_length=1)
-    actor_role: str = "marketing-lead"
+    actor_role: str = "bu-campaign-lead"
 
 
 class DecisionIn(BaseModel):

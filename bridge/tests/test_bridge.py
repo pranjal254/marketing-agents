@@ -268,7 +268,7 @@ def test_archive_case_is_append_only_soft_delete(client: TestClient) -> None:
         "decision": "approved", "actor_role": "bu-campaign-lead", "actor_id": "lead@x.com",
     })
     response = client.delete(
-        f"/api/cases/{case_id}?actor_id=neeraj_v@levelshift.com&actor_role=Marketing Lead"
+        f"/api/cases/{case_id}?actor_id=neeraj_v@levelshift.com&actor_role=BU Campaign Lead"
     )
     assert response.status_code == 200, response.text
     assert response.json()["status"] == "archived"

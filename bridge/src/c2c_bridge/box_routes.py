@@ -42,7 +42,7 @@ class ConfirmIn(BaseModel):
     kind: Literal["pack", "plan"]
     decision: Literal["confirmed", "modified"] = "confirmed"
     actor_id: str = Field(min_length=1)
-    actor_role: str = "marketing-lead"
+    actor_role: str = "bu-campaign-lead"
     deltas: dict[str, Any] | None = None
     notes: str | None = None
 

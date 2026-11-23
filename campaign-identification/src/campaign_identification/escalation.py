@@ -13,7 +13,9 @@ from typing import Any
 
 # Queue id (config routingMap) -> the human label the studio shows.
 QUEUE_LABELS: dict[str, str] = {
-    "marketing-lead-queue": "Marketing Lead",
+    # Marketing Lead was merged into BU Campaign Lead; the queue id is kept so
+    # agent configs stay stable, but it resolves to the single lead role.
+    "marketing-lead-queue": "BU Campaign Lead",
     "bu-campaign-lead-queue": "BU Campaign Lead",
     "requester": "the requester",
     "aicoe-queue": "AiCoE Admin",
@@ -119,7 +121,7 @@ def explain_escalation(
                     "Confirm: no pricing, legal, or partner commitment is made — continue",
                     "resolve",
                     patch={},  # the studio fills compliance_ack with the confirmer's identity
-                    roles=["Marketing Lead", "AiCoE Admin"],
+                    roles=["BU Campaign Lead", "AiCoE Admin"],
                     note="Your name and role are recorded on the case as the confirmation.",
                 ),
                 _option(
